@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Your AI Vacation Report</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h2>Hello {{ user.get_full_name|default:user.username }},</h2>
+    <p>Your <strong>AI-powered vacation report</strong> is ready!</p>
+    <p>
+        You can find your personalized recommendations and itinerary in the attached PDF.<br>
+        <strong>If you are not satisfied and would like a refund, please email <a href="mailto:support@genvacation.com">support@genvacation.com</a> within 24 hours of receiving this email. Include your request and your crypto account address.</strong>
+    </p>
+    <br>
+    <p>Best regards,<br>
+    The GenVacation Team</p>
+    <p style="font-size:0.95em; color:#555;">
+        For support: <a href="mailto:support@genvacation.com">support@genvacation.com</a>
+    </p>
+</body>
+</html>

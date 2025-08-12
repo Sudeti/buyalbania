@@ -1,0 +1,23 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "{% block schema_type %}Organization{% endblock %}": {
+    "name": "AI Vacation",
+    "url": "{{ request.scheme }}://{{ request.get_host }}",
+    "logo": "{{ request.scheme }}://{{ request.get_host }}",
+    "sameAs": [
+      "https://twitter.com/aivacation",
+      "https://facebook.com/aivacation",
+      "https://instagram.com/aivacation"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "support@aivacation.example.com",
+      "contactType": "customer service"
+    },
+    "description": "AI-powered vacation recommendations tailored to your preferences, budget, and travel style."
+  }
+}
+</script>
+
+{% block additional_structured_data %}{% endblock %}

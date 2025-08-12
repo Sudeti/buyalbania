@@ -1,0 +1,36 @@
+<div id="cookie-consent-banner" class="position-fixed bottom-0 start-0 end-0 p-3 bg-dark text-white" style="z-index: 1050; display: none;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <p class="mb-md-0">
+                    We use cookies to enhance your experience on our site. By continuing to browse, you agree to our use of cookies as described in our 
+                    <a href="{% url 'accounts:privacy_policy' %}" class="text-info">Privacy Policy</a>.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <button id="accept-cookies" class="btn btn-sm btn-outline-light me-2">Accept All</button>
+                <button id="reject-cookies" class="btn btn-sm btn-outline-secondary">Reject Non-Essential</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user has already made a cookie choice
+    if (!localStorage.getItem('cookie_consent')) {
+        document.getElementById('cookie-consent-banner').style.display = 'block';
+    }
+    
+    document.getElementById('accept-cookies').addEventListener('click', function() {
+        localStorage.setItem('cookie_consent', 'accepted');
+        document.getElementById('cookie-consent-banner').style.display = 'none';
+    });
+    
+    document.getElementById('reject-cookies').addEventListener('click', function() {
+        localStorage.setItem('cookie_consent', 'rejected');
+        document.getElementById('cookie-consent-banner').style.display = 'none';
+        // Here you would disable non-essential cookies
+    });
+});
+</script>

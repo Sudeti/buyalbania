@@ -1,0 +1,188 @@
+{% extends 'property_ai/base.html' %}
+{% load static %}
+
+{% block title %}Your Profile - AI Property Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        padding: 50px 0;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .profile-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .profile-card-header {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .profile-card-header h3 {
+        margin: 0;
+        color: #374151;
+        font-weight: 600;
+    }
+    
+    .profile-card-body {
+        padding: 1.5rem;
+    }
+    
+    .analysis-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .analysis-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-analyzing { background: #dbeafe; color: #1e40af; }
+    .status-completed { background: #d1fae5; color: #059669; }
+    .status-failed { background: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container profile-container">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1>Welcome, {{ user.username }}</h1>
+                <p class="mb-0">Manage your property analyses and account settings</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-outline-light">
+                    <i class="fas fa-plus me-2"></i>New Analysis
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Account Information -->
+        <div class="col-md-4">
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h3><i class="fas fa-user me-2"></i>Account Settings</h3>
+                </div>
+                <div class="profile-card-body">
+                    <div class="mb-3">
+                        <strong>Username:</strong><br>
+                        {{ user.username }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Email:</strong><br>
+                        {{ user.email }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Member Since:</strong><br>
+                        {{ user.date_joined|date:"F Y" }}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'accounts:delete_profile_confirm' %}" class="btn btn-outline-danger btn-sm">
+                            Delete Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Property Analyses -->
+        <div class="col-md-8">
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3><i class="fas fa-building me-2"></i>Your Property Analyses</h3>
+                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-2"></i>New Analysis
+                        </a>
+                    </div>
+                </div>
+                <div class="profile-card-body">
+                    {% if analyses %}
+                    {% for analysis in analyses %}
+                    <div class="analysis-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="mb-1">{{ analysis.property_title|truncatechars:50 }}</h5>
+                                <p class="text-muted mb-1">{{ analysis.property_location }}</p>
+                                <small class="text-muted">{{ analysis.created_at|date:"M j, Y" }}</small>
+                            </div>
+                            <span class="status-badge status-{{ analysis.status }}">
+                                {{ analysis.status }}
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>€{{ analysis.asking_price|floatformat:0 }}</strong>
+                                {% if analysis.square_meters %}
+                                <span class="text-muted">• {{ analysis.square_meters }} m²</span>
+                                {% endif %}
+                                {% if analysis.investment_score %}
+                                <span class="text-muted">• Score: {{ analysis.investment_score }}/100</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <h5>No Property Analyses Yet</h5>
+                        <p class="text-muted">Start analyzing Albanian properties to get AI-powered investment insights.</p>
+                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Analyze Your First Property
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

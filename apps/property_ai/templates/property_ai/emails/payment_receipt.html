@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2563eb;
+            margin: 0;
+        }
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .order-row:last-child {
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ Payment Confirmed!</h1>
+            <p>Your vacation report is being generated</p>
+        </div>
+
+        <p>Hi {{ user.first_name|default:user.username }},</p>
+
+        <p>Your payment has been confirmed and your personalized vacation report is now being created.</p>
+
+        <div class="order-info">
+            <div class="order-row">
+                <span>Order ID:</span>
+                <span>{{ order_id }}</span>
+            </div>
+            <div class="order-row">
+                <span>Service:</span>
+                <span>AI Vacation Analysis ({{ analysis.duration_days }} days)</span>
+            </div>
+            <div class="order-row">
+                <span>Amount:</span>
+                <span>€{{ amount }}</span>
+            </div>
+        </div>
+
+        <p><strong>What's next?</strong></p>
+        <ul>
+            <li>Your report will be ready within 1 hour</li>
+            <li>We'll email you when it's complete</li>
+            <li>You can also check your account for updates</li>
+        </ul>
+
+        <a href="https://genvacation.com/my-analyses/" class="btn">View My Account</a>
+
+        <p>Thank you for using our service!</p>
+
+        <div class="footer">
+            <p>Questions? Email us at <a href="mailto:support@genvacation.com">support@genvacation.com</a></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Property Analysis Report</title>
+</head>
+<body>
+    <div class="cover-page">
+        <h1>Property Investment Analysis</h1>
+        <h2>{{ property_analysis.property_title }}</h2>
+        <p>Location: {{ property_analysis.property_location }}</p>
+        <p>Report ID: {{ report_id }}</p>
+        <p>Generated: {{ generation_date|date:"F d, Y" }}</p>
+    </div>
+
+    <h1>Investment Summary</h1>
+    <div class="score-section">
+        <div class="investment-score">{{ investment_score|default:85 }}</div>
+        <div class="recommendation">{{ recommendation|default:"Buy"|title }}</div>
+    </div>
+
+    <h2>Property Details</h2>
+    <p><strong>Price:</strong> €{{ property_analysis.asking_price }}</p>
+    <p><strong>Size:</strong> {{ property_analysis.square_meters }} m²</p>
+    <p><strong>Bedrooms:</strong> {{ property_analysis.bedrooms }}</p>
+    <p><strong>Bathrooms:</strong> {{ property_analysis.bathrooms }}</p>
+
+    <h2>Analysis Summary</h2>
+    <p>{{ summary }}</p>
+
+    {% if price_analysis %}
+    <h2>Price Analysis</h2>
+    <p><strong>Price per m²:</strong> €{{ price_analysis.price_per_sqm }}</p>
+    <p><strong>Market Average:</strong> €{{ price_analysis.market_average_per_sqm }}</p>
+    <p><strong>Fair Value:</strong> €{{ price_analysis.fair_value_estimate }}</p>
+    {% endif %}
+
+    {% if rental_analysis %}
+    <h2>Rental Analysis</h2>
+    <p><strong>Estimated Rent:</strong> €{{ rental_analysis.estimated_monthly_rent }}/month</p>
+    <p><strong>Annual Yield:</strong> {{ rental_analysis.annual_yield }}</p>
+    {% endif %}
+
+    {% if market_insights %}
+    <h2>Market Insights</h2>
+    <ul>
+    {% for insight in market_insights %}
+        <li>{{ insight }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if risk_factors %}
+    <h2>Risk Factors</h2>
+    <ul>
+    {% for risk in risk_factors %}
+        <li>{{ risk }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="report-footer">
+        <p>Report generated on {{ generation_date|date:"F d, Y" }}</p>
+        <p>AI Property Analysis - Professional Investment Insights</p>
+    </div>
+</body>
+</html>

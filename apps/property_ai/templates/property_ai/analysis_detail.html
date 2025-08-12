@@ -1,0 +1,446 @@
+{% extends "property_ai/base.html" %}
+{% load static %}
+
+{% block title %}Property Analysis - {{ analysis.property_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .property-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+    }
+    
+    .score-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .investment-score {
+        font-size: 4rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .recommendation-badge {
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .strong-buy { background: #10b981; color: white; }
+    .buy { background: #3b82f6; color: white; }
+    .hold { background: #f59e0b; color: white; }
+    .avoid { background: #ef4444; color: white; }
+    
+    .analysis-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .property-details {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .insight-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .insight-item {
+        padding: 0.75rem 0;
+        border-left: 4px solid #667eea;
+        padding-left: 1rem;
+        margin-bottom: 0.5rem;
+        background: #f8fafc;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .risk-item {
+        border-left-color: #f59e0b;
+    }
+    
+    .market-position {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .market-position h4 {
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .property-timeline {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .removed-notice {
+        color: #856404;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not user.is_authenticated %}
+<div class="container py-5">
+    <div class="alert alert-warning text-center">
+        <h4>Login Required</h4>
+        <p>Please log in to view property analyses.</p>
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary">Login</a>
+        <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary">Sign Up Free</a>
+    </div>
+</div>
+{% else %}
+<div class="property-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold">{{ analysis.property_title }}</h1>
+                <p class="lead">{{ analysis.property_location }}</p>
+                {% if analysis.neighborhood %}
+                    <p class="text-light mb-2"><i class="fas fa-map-marker-alt me-2"></i>{{ analysis.neighborhood }}</p>
+                {% endif %}
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-light text-dark fs-6">€{{ analysis.asking_price|floatformat:0 }}</span>
+                    {% if analysis.usable_area %}
+                        <span class="text-light">{{ analysis.usable_area }} m²</span>
+                        {% if analysis.price_per_sqm %}
+                            <span class="text-light">€{{ analysis.price_per_sqm|floatformat:0 }}/m²</span>
+                        {% endif %}
+                    {% endif %}
+                    {% if analysis.bedrooms %}<span class="text-light">{{ analysis.bedrooms }} bed</span>{% endif %}
+                    {% if analysis.bathrooms %}<span class="text-light">{{ analysis.bathrooms }} bath</span>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    {% if analysis.status == 'completed' %}
+    
+    <!-- Property Timeline/Status -->
+    <div class="property-timeline">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <p class="mb-0"><strong>Days on Market:</strong> {{ analysis.days_on_market }}</p>
+                {% if not analysis.is_active %}
+                    <p class="removed-notice mb-0">⚠️ This property is no longer available (removed {{ analysis.removed_date|date:"M d, Y" }})</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-end">
+                <small class="text-muted">Analyzed {{ analysis.created_at|date:"M d, Y" }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Investment Score -->
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="score-card">
+                <div class="investment-score">{{ analysis.investment_score|default:0 }}</div>
+                <h3>Investment Score</h3>
+                {% if analysis.recommendation %}
+                    <span class="recommendation-badge {{ analysis.recommendation }}">
+                        {{ analysis.recommendation|title|default:'Under Review' }}
+                    </span>
+                {% endif %}
+                {% if analysis.analysis_result.price_analysis.market_position_percentage %}
+                    <div class="market-position mt-3">
+                        <h4>Market Position</h4>
+                        <p class="mb-0">
+                            {{ analysis.analysis_result.price_analysis.market_position_percentage|floatformat:1 }}% 
+                            {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}below{% else %}above{% endif %} 
+                            market average
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Details -->
+    <div class="analysis-section">
+        <h2><i class="fas fa-home me-2"></i>Property Details</h2>
+        <div class="property-details">
+            <div class="detail-item">
+                <span><strong>Asking Price:</strong></span>
+                <span>€{{ analysis.asking_price|floatformat:0 }}</span>
+            </div>
+            {% if analysis.usable_area %}
+            <div class="detail-item">
+                <span><strong>Usable Area:</strong></span>
+                <span>{{ analysis.usable_area }} m²</span>
+            </div>
+            {% endif %}
+            {% if analysis.total_area and analysis.total_area != analysis.usable_area %}
+            <div class="detail-item">
+                <span><strong>Total Area:</strong></span>
+                <span>{{ analysis.total_area }} m²</span>
+            </div>
+            {% endif %}
+            {% if analysis.price_per_sqm %}
+            <div class="detail-item">
+                <span><strong>Price per m²:</strong></span>
+                <span>€{{ analysis.price_per_sqm|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+            {% if analysis.bedrooms %}
+            <div class="detail-item">
+                <span><strong>Bedrooms:</strong></span>
+                <span>{{ analysis.bedrooms }}</span>
+            </div>
+            {% endif %}
+            {% if analysis.bathrooms %}
+            <div class="detail-item">
+                <span><strong>Bathrooms:</strong></span>
+                <span>{{ analysis.bathrooms }}</span>
+            </div>
+            {% endif %}
+            <div class="detail-item">
+                <span><strong>Property Type:</strong></span>
+                <span>{{ analysis.property_type|title }}</span>
+            </div>
+            {% if analysis.property_condition %}
+            <div class="detail-item">
+                <span><strong>Condition:</strong></span>
+                <span>{{ analysis.property_condition|title }}</span>
+            </div>
+            {% endif %}
+            {% if analysis.floor_level %}
+            <div class="detail-item">
+                <span><strong>Floor Level:</strong></span>
+                <span>{{ analysis.floor_level|title }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI Summary -->
+    {% if analysis.ai_summary %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-brain me-2"></i>AI Analysis Summary</h2>
+        <p class="lead">{{ analysis.ai_summary }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Price Analysis -->
+    {% if analysis.analysis_result.price_analysis %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-chart-line me-2"></i>Price Analysis</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="property-details">
+                    {% if analysis.analysis_result.price_analysis.price_per_sqm %}
+                    <div class="detail-item">
+                        <span><strong>Price per m²:</strong></span>
+                        <span>€{{ analysis.analysis_result.price_analysis.price_per_sqm|floatformat:0 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if analysis.analysis_result.price_analysis.market_average_per_sqm %}
+                    <div class="detail-item">
+                        <span><strong>Market Average per m²:</strong></span>
+                        <span>€{{ analysis.analysis_result.price_analysis.market_average_per_sqm|floatformat:0 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if analysis.analysis_result.price_analysis.value_assessment %}
+                    <div class="detail-item">
+                        <span><strong>Value Assessment:</strong></span>
+                        <span>{{ analysis.analysis_result.price_analysis.value_assessment|title }}</span>
+                    </div>
+                    {% endif %}
+                    {% if analysis.analysis_result.price_analysis.negotiation_potential %}
+                    <div class="detail-item">
+                        <span><strong>Negotiation Potential:</strong></span>
+                        <span>{{ analysis.analysis_result.price_analysis.negotiation_potential }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                {% if analysis.analysis_result.price_analysis.market_position_percentage %}
+                <div class="alert {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}alert-success{% else %}alert-warning{% endif %}">
+                    <strong>Market Position:</strong><br>
+                    This property is priced {{ analysis.analysis_result.price_analysis.market_position_percentage|floatformat:1 }}% 
+                    {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}below{% else %}above{% endif %} 
+                    the market average
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Rental Analysis -->
+    {% if analysis.analysis_result.rental_analysis %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-coins me-2"></i>Rental Analysis</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="property-details">
+                    {% if analysis.analysis_result.rental_analysis.estimated_monthly_rent %}
+                    <div class="detail-item">
+                        <span><strong>Estimated Monthly Rent:</strong></span>
+                        <span>€{{ analysis.analysis_result.rental_analysis.estimated_monthly_rent|floatformat:0 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if analysis.analysis_result.rental_analysis.annual_gross_yield %}
+                    <div class="detail-item">
+                        <span><strong>Annual Gross Yield:</strong></span>
+                        <span>{{ analysis.analysis_result.rental_analysis.annual_gross_yield }}</span>
+                    </div>
+                    {% endif %}
+                    {% if analysis.analysis_result.rental_analysis.rental_demand %}
+                    <div class="detail-item">
+                        <span><strong>Rental Demand:</strong></span>
+                        <span>{{ analysis.analysis_result.rental_analysis.rental_demand|title }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-info">
+                    <strong>Investment Potential:</strong><br>
+                    {% if analysis.analysis_result.rental_analysis.rental_demand == 'high' %}
+                        Strong rental potential in this area with high demand
+                    {% elif analysis.analysis_result.rental_analysis.rental_demand == 'medium' %}
+                        Moderate rental potential with steady demand
+                    {% else %}
+                        Consider location and property type for rental viability
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Market Insights -->
+    {% if analysis.analysis_result.market_insights %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-lightbulb me-2"></i>Market Insights</h2>
+        <ul class="insight-list">
+            {% for insight in analysis.analysis_result.market_insights %}
+            <li class="insight-item">{{ insight }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Risk Factors -->
+    {% if analysis.analysis_result.risk_factors %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-exclamation-triangle me-2"></i>Risk Factors</h2>
+        <ul class="insight-list">
+            {% for risk in analysis.analysis_result.risk_factors %}
+            <li class="insight-item risk-item">{{ risk }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Action Items -->
+    {% if analysis.analysis_result.action_items %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-tasks me-2"></i>Recommended Actions</h2>
+        <ul class="insight-list">
+            {% for action in analysis.analysis_result.action_items %}
+            <li class="insight-item">{{ action }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Similar Properties -->
+    {% if similar_properties %}
+    <div class="analysis-section">
+        <h2><i class="fas fa-balance-scale me-2"></i>Similar Properties</h2>
+        <div class="row">
+            {% for prop in similar_properties %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ prop.property_title|truncatechars:40 }}</h6>
+                        <p class="card-text small text-muted">{{ prop.property_location }}</p>
+                        <div class="d-flex justify-content-between">
+                            <span>€{{ prop.asking_price|floatformat:0 }}</span>
+                            {% if prop.investment_score %}
+                                <span class="badge bg-primary">{{ prop.investment_score }}</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'property_ai:analysis_detail' analysis_id=prop.id %}" 
+                           class="btn btn-sm btn-outline-primary mt-2">Compare</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Download Report -->
+    {% if user.is_authenticated and analysis.report_generated and analysis.report_file_path %}
+    <div class="text-center my-5">
+        <a href="{% url 'property_ai:download_report' analysis_id=analysis.id %}" 
+           class="btn btn-primary btn-lg">
+            <i class="fas fa-download me-2"></i>Download Full Report
+        </a>
+    </div>
+    {% elif user.is_authenticated %}
+    <div class="text-center my-5">
+        <p class="text-muted">PDF report will be generated and emailed to you shortly.</p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Analysis in Progress -->
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <h3>Analysis in Progress</h3>
+        <p class="text-muted">Status: {{ analysis.status|title }}</p>
+        {% if analysis.processing_stage %}
+            <p class="text-muted">{{ analysis.processing_stage|title }}</p>
+        {% endif %}
+        <div class="mt-4">
+            <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" 
+               class="btn btn-outline-primary">
+                <i class="fas fa-refresh me-2"></i>Refresh
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

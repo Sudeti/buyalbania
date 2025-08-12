@@ -1,0 +1,36 @@
+{% extends 'property_ai/base.html' %}
+{% load static %}
+
+{% block title %}Your Accepted Privacy Policy - AI Vacation Recommendations{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0">Privacy Policy You Accepted</h1>
+                    <p class="mb-0 small">Version {{ policy.version }} - Effective {{ policy.effective_date }}</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><strong>Acceptance Details:</strong></p>
+                        <ul>
+                            <li>Accepted on: {{ consent.accepted_at }}</li>
+                            <li>Policy version: {{ policy.version }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="privacy-policy-content">
+                        {{ policy.content|safe }}
+                    </div>
+                    
+                    <div class="text-center mt-5">
+                        <a href="{% url 'accounts:user_profile' %}" class="btn btn-outline-primary">Return to Profile</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

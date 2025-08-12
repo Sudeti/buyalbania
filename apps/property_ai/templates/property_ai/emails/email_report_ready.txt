@@ -1,0 +1,13 @@
+Hello {{ user.get_full_name|default:user.username }},
+
+Your AI-powered vacation report is ready!
+
+You can find your personalized recommendations and itinerary in the attached PDF.
+
+If you are not satisfied and would like a refund, please email support@genvacation.com within 24 hours of receiving this email. Include your request and your crypto account address.
+
+Thank you for using GenVacation!
+
+Best regards,
+The GenVacation Team
+For support: support@genvacation.com
