@@ -16,7 +16,7 @@ class Command(BaseCommand):
     
     def add_arguments(self, parser):
         parser.add_argument('--user-id', type=int, required=True)
-        parser.add_argument('--max-pages', type=int, default=100, help='Pages to scrape this session')
+        parser.add_argument('--max-pages', type=int, default=10, help='Pages to scrape this session')
         parser.add_argument('--start-page', type=int, default=1, help='Starting page number')
         parser.add_argument('--delay', type=float, default=3.0, help='Base delay between requests')
         parser.add_argument('--test-mode', action='store_true', help='Enable extra safety for testing')

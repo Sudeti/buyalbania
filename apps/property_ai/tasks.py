@@ -181,16 +181,6 @@ def analyze_property_task(self, property_analysis_id):
         else:
             raise
 
-@shared_task
-def batch_analyze_pending_properties():
-    """Analyze all pending properties in batches"""
-    pending_properties = PropertyAnalysis.objects.filter(status='analyzing')[:50]  # Limit batch size
-    
-    for prop in pending_properties:
-        analyze_property_task.delay(prop.id)
-    
-    return f"Queued analysis for {pending_properties.count()} properties"
-
 
 @shared_task
 def daily_property_scrape():
@@ -262,7 +252,7 @@ def daily_property_scrape():
 
 @shared_task
 def midnight_bulk_scrape_task():
-    """Safe midnight bulk scraping - 300-500 pages"""
+    """Safe midnight bulk scraping - 30-50 pages"""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
     import os
@@ -278,12 +268,12 @@ def midnight_bulk_scrape_task():
         # Calculate pages to scrape (progressive approach)
         current_count = PropertyAnalysis.objects.count()
         
-        if current_count < 1200:  # First few runs
-            pages_to_scrape = 100
-        elif current_count < 3600:  # Building up
-            pages_to_scrape = 200
-        elif current_count < 6000:  # Getting there
-            pages_to_scrape = 300
+        if current_count < 200:  # First few runs
+            pages_to_scrape = 20
+        elif current_count < 500:  # Building up
+            pages_to_scrape = 30
+        elif current_count < 700:  # Getting theres
+            pages_to_scrape = 40
         else:  # Final push or maintenance
             pages_to_scrape = 50  # Just check for new ones
         
