@@ -19,32 +19,27 @@ class Century21AlbaniaScraper:
         self.session = requests.Session()
         self.session.headers.update(self.headers)
     
-    def get_sale_property_listings(self, max_pages=10, property_types=None):
-        """Get sale property URLs - IMPROVED"""
+    def get_sale_property_listings(self, max_pages=10):
         property_urls = []
         
         for page in range(1, max_pages + 1):
-            urls_to_try = [
-                f"{self.base_url}/properties",
-                f"{self.base_url}/properties?page={page}",
-                f"{self.base_url}/en/properties?page={page}",
-                f"{self.base_url}/properties/for-sale?page={page}",  # Try sale-specific URL
-            ]
+            # We KNOW the correct URL pattern, so use it directly
+            if page == 1:
+                url = f"{self.base_url}/properties"
+            else:
+                url = f"{self.base_url}/properties?page={page}"
             
-            for url in urls_to_try:
-                try:
-                    response = self.session.get(url, timeout=30)
-                    if response.status_code == 200:
-                        page_urls = self._extract_urls_from_page(response.content, url)
-                        if page_urls:
-                            property_urls.extend(page_urls)
-                            break
-                except Exception as e:
-                    logger.error(f"Error getting page {url}: {e}")
-            
-            time.sleep(random.uniform(1, 3))
+            # Single request per page - no guessing needed
+            try:
+                response = self.session.get(url, timeout=30)
+                if response.status_code == 200:
+                    page_urls = self._extract_urls_from_page(response.content, url)
+                    property_urls.extend(page_urls)
+            except Exception as e:
+                logger.error(f"Error on page {page}: {e}")
         
-        return list(set(property_urls))
+        return list(set(property_urls))  # Remove any duplicates
+        
     
     def _extract_urls_from_page(self, html_content, page_url):
         """Extract property URLs from listings page"""

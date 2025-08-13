@@ -173,30 +173,30 @@ CELERY_TIMEZONE = TIME_ZONE
 # Add this line:
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-# Celery Beat Schedule
+# Simplified schedule - replace the existing CELERY_BEAT_SCHEDULE
 CELERY_BEAT_SCHEDULE = {
     'cleanup-inactive-users-daily': {
         'task': 'apps.accounts.tasks.cleanup_inactive_users',
-        'schedule': crontab(hour=0, minute=0),  # every day at midnight
-    },
-
-    'daily-property-scrape': {
-        'task': 'apps.property_ai.tasks.daily_property_scrape',
-        'schedule': crontab(hour=2, minute=0),  # Run at 2 AM daily
-        'options': {'queue': 'default'}
+        'schedule': crontab(hour=0, minute=0),
     },
     
-    # Check property URLs every Sunday at 3 AM
-    'check-property-urls': {
-        'task': 'apps.property_ai.tasks.check_property_urls_task',
-        'schedule': crontab(hour=3, minute=0, day_of_week=0),  # Sunday 3 AM
-    },
-    # NEW: Nightly bulk scrape
-    'nightly-bulk-scrape': {
-        'task': 'apps.property_ai.tasks.nightly_bulk_scrape_task',
+    # Midnight bulk scraping (when server load is lowest)
+    'midnight-bulk-scrape': {
+        'task': 'apps.property_ai.tasks.midnight_bulk_scrape_task',
         'schedule': crontab(hour=1, minute=30),  # 1:30 AM daily
     },
 
+    # Simple daily check for new properties
+    'daily-new-property-check': {
+        'task': 'apps.property_ai.tasks.daily_property_scrape',
+        'schedule': crontab(hour=6, minute=0),  # 5 AM daily
+    },
+    
+    # Weekly URL health check
+    'weekly-property-url-check': {
+        'task': 'apps.property_ai.tasks.check_property_urls_task',
+        'schedule': crontab(hour=3, minute=0, day_of_week=0),  # Sunday 3 AM
+    },
 }
 
 # REST Framework configuration

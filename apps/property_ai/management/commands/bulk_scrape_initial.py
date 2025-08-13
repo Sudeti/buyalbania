@@ -1,160 +1,219 @@
 # apps/property_ai/management/commands/bulk_scrape_initial.py
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from apps.property_ai.models import PropertyAnalysis
-from django.db.models import Count, Q
+from apps.property_ai.scrapers import Century21AlbaniaScraper
+from django.db import transaction
 import time
+import random
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Initial bulk scraping of all available Century21 properties with agent intelligence'
+    help = 'Bulletproof bulk scraping with safety measures'
     
     def add_arguments(self, parser):
         parser.add_argument('--user-id', type=int, required=True)
-        parser.add_argument('--max-pages', type=int, default=50, help='Max pages for initial scrape')
-        parser.add_argument('--analyze', action='store_true', help='Run AI analysis immediately')
-        parser.add_argument('--batch-delay', type=int, default=300, help='Delay between batches (seconds)')
-        parser.add_argument('--delay', type=float, default=2.5, help='Delay between individual requests')
+        parser.add_argument('--max-pages', type=int, default=100, help='Pages to scrape this session')
+        parser.add_argument('--start-page', type=int, default=1, help='Starting page number')
+        parser.add_argument('--delay', type=float, default=3.0, help='Base delay between requests')
+        parser.add_argument('--test-mode', action='store_true', help='Enable extra safety for testing')
         
     def handle(self, *args, **options):
         user = User.objects.get(id=options['user_id'])
         
-        self.stdout.write(f"🚀 STARTING INITIAL BULK SCRAPE")
+        # Enhanced safety for test mode
+        if options['test_mode']:
+            options['delay'] = max(options['delay'], 4.0)  # Minimum 4s in test mode
+            self.stdout.write("🧪 TEST MODE: Extra safety measures enabled")
+        
+        self.stdout.write(f"🌙 BULLETPROOF NIGHT SCRAPE")
         self.stdout.write(f"👤 User: {user.username}")
-        self.stdout.write(f"📊 Max pages: {options['max_pages']}")
-        self.stdout.write(f"🤖 AI Analysis: {'Enabled' if options['analyze'] else 'Disabled'}")
-        self.stdout.write(f"⏱️ Request delay: {options['delay']}s")
-        self.stdout.write(f"⏸️ Batch delay: {options['batch_delay']}s")
+        self.stdout.write(f"📄 Pages: {options['start_page']} to {options['start_page'] + options['max_pages'] - 1}")
+        self.stdout.write(f"⏰ Base delay: {options['delay']}s")
+        self.stdout.write(f"🎯 Expected properties: ~{options['max_pages'] * 12}")
         
-        # Run the scraping in smaller batches to avoid overwhelming the server
-        pages_per_batch = 8  # Increased from 5 since we have delays
-        total_batches = (options['max_pages'] + pages_per_batch - 1) // pages_per_batch
+        start_time = time.time()
         
-        total_scraped = 0
-        total_with_agents = 0
-        batch_start_time = time.time()
+        # Initialize scraper with rotating headers
+        scraper = Century21AlbaniaScraper()
         
-        for batch_num in range(total_batches):
-            start_page = batch_num * pages_per_batch + 1
-            end_page = min((batch_num + 1) * pages_per_batch, options['max_pages'])
-            pages_in_batch = end_page - start_page + 1
+        # Circuit breaker variables
+        consecutive_failures = 0
+        max_failures = 5
+        
+        # Collect URLs first (with safety checks)
+        self.stdout.write(f"\n📋 Phase 1: Safely collecting URLs...")
+        
+        try:
+            all_urls = self.safe_get_urls(scraper, options['start_page'], options['max_pages'], options['delay'])
             
-            self.stdout.write(f"\n📦 BATCH {batch_num + 1}/{total_batches}: Pages {start_page}-{end_page}")
+            if not all_urls:
+                self.stdout.write("❌ No URLs collected - possible blocking detected")
+                return
+                
+            self.stdout.write(f"✅ Collected {len(all_urls)} URLs successfully")
             
-            # Track before batch
-            properties_before = PropertyAnalysis.objects.filter(scraped_by=user).count()
-            
+        except Exception as e:
+            self.stdout.write(f"❌ URL collection failed: {e}")
+            return
+        
+        # Filter existing URLs
+        existing_urls = set(PropertyAnalysis.objects.values_list('property_url', flat=True))
+        new_urls = [url for url in all_urls if url not in existing_urls]
+        
+        self.stdout.write(f"🆕 New URLs to scrape: {len(new_urls)}")
+        self.stdout.write(f"⚠️ Already exist: {len(all_urls) - len(new_urls)}")
+        
+        if len(new_urls) == 0:
+            self.stdout.write("✅ No new properties to scrape - database is up to date")
+            return
+        
+        # Phase 2: Scrape with maximum safety
+        self.stdout.write(f"\n🕷️ Phase 2: Ultra-safe property scraping...")
+        
+        successful = 0
+        failed = 0
+        
+        for i, url in enumerate(new_urls, 1):
             try:
-                call_command(
-                    'scrape_century21_sales',
-                    f'--user-id={options["user_id"]}',
-                    f'--max-pages={pages_in_batch}',
-                    f'--delay={options["delay"]}',
-                    '--analyze' if options['analyze'] else '',
-                )
+                # Progress indicator
+                if i % 50 == 0:
+                    progress = (i / len(new_urls)) * 100
+                    elapsed = time.time() - start_time
+                    eta = (elapsed / i) * (len(new_urls) - i)
+                    self.stdout.write(f"📈 Progress: {progress:.1f}% | ETA: {int(eta/60)}m | Success: {successful}")
                 
-                # Track after batch
-                properties_after = PropertyAnalysis.objects.filter(scraped_by=user).count()
-                batch_scraped = properties_after - properties_before
-                total_scraped += batch_scraped
+                # Human-like break every 100 properties
+                if i > 1 and i % 100 == 0:
+                    break_time = random.uniform(60, 180)  # 1-3 minute break
+                    self.stdout.write(f"😴 Human-like break: {break_time:.0f}s")
+                    time.sleep(break_time)
                 
-                self.stdout.write(f"📈 Batch {batch_num + 1} scraped: {batch_scraped} properties")
+                # Scrape with circuit breaker
+                data = scraper.scrape_property(url)
                 
-                # Rest between batches to be respectful to the server
-                if batch_num < total_batches - 1:  # Don't wait after the last batch
-                    self.stdout.write(f"⏳ Waiting {options['batch_delay']} seconds before next batch...")
-                    time.sleep(options['batch_delay'])
+                if data and data['price'] > 0:
+                    # Create property
+                    PropertyAnalysis.objects.create(
+                        user=None,
+                        scraped_by=user,
+                        property_url=data['url'],
+                        property_title=data['title'],
+                        property_location=data['location'],
+                        neighborhood=data.get('neighborhood', ''),
+                        asking_price=data['price'],
+                        property_type=data['property_type'],
+                        total_area=data['square_meters'],
+                        property_condition=data['condition'],
+                        floor_level=data['floor_level'],
+                        agent_name=data.get('agent_name', ''),
+                        agent_email=data.get('agent_email', ''),
+                        agent_phone=data.get('agent_phone', ''),
+                        status='analyzing'
+                    )
                     
+                    successful += 1
+                    consecutive_failures = 0  # Reset failure counter
+                    
+                    # Log good properties
+                    agent_info = f" | Agent: {data.get('agent_name', 'N/A')}" if data.get('agent_name') else ""
+                    self.stdout.write(f"  ✅ {i}/{len(new_urls)}: €{data['price']:,} - {data['title'][:30]}...{agent_info}")
+                    
+                else:
+                    failed += 1
+                    consecutive_failures += 1
+                    
+                # Circuit breaker
+                if consecutive_failures >= max_failures:
+                    self.stdout.write(f"🛑 CIRCUIT BREAKER: {max_failures} consecutive failures - stopping for safety")
+                    break
+                
+                # Dynamic delay (longer delays as we progress)
+                base_delay = options['delay']
+                jitter = random.uniform(0.5, 2.0)
+                fatigue_factor = 1 + (i / len(new_urls)) * 0.5  # Slow down over time
+                
+                actual_delay = (base_delay + jitter) * fatigue_factor
+                time.sleep(actual_delay)
+                
             except Exception as e:
-                self.stdout.write(f"❌ Batch {batch_num + 1} failed: {e}")
+                failed += 1
+                consecutive_failures += 1
+                self.stdout.write(f"  ❌ {i}/{len(new_urls)}: Error - {str(e)[:50]}")
+                
+                if consecutive_failures >= max_failures:
+                    self.stdout.write(f"🛑 Too many failures - stopping for safety")
+                    break
+                
+                time.sleep(options['delay'] * 2)  # Longer delay after errors
+        
+        total_time = time.time() - start_time
+        
+        self.stdout.write(f"\n🎉 NIGHT SCRAPE COMPLETED!")
+        self.stdout.write(f"⏱️ Total time: {int(total_time/60)}m {int(total_time%60)}s")
+        self.stdout.write(f"✅ Successful: {successful}")
+        self.stdout.write(f"❌ Failed: {failed}")
+        self.stdout.write(f"📊 Success rate: {successful/(successful+failed)*100:.1f}%")
+        
+        # Final stats
+        self.show_final_stats()
+    
+    def safe_get_urls(self, scraper, start_page, max_pages, delay):
+        """Safely collect URLs with built-in protection"""
+        all_urls = []
+        
+        for page in range(start_page, start_page + max_pages):
+            try:
+                if page == 1:
+                    url = f"{scraper.base_url}/properties"
+                else:
+                    url = f"{scraper.base_url}/properties?page={page}"
+                
+                response = scraper.session.get(url, timeout=30)
+                
+                # Safety checks
+                if response.status_code == 429:
+                    self.stdout.write(f"⚠️ Rate limited on page {page} - backing off")
+                    time.sleep(300)  # 5 min cooldown
+                    continue
+                
+                if response.status_code != 200:
+                    self.stdout.write(f"⚠️ Page {page}: HTTP {response.status_code}")
+                    continue
+                
+                if "captcha" in response.text.lower():
+                    self.stdout.write(f"🛑 CAPTCHA detected on page {page} - stopping")
+                    break
+                
+                page_urls = scraper._extract_urls_from_page(response.content, url)
+                
+                if not page_urls:
+                    self.stdout.write(f"⚠️ Page {page}: No URLs found - possible end of listings")
+                    break
+                
+                all_urls.extend(page_urls)
+                self.stdout.write(f"📄 Page {page}: {len(page_urls)} URLs")
+                
+                # Respectful delay between page requests
+                time.sleep(random.uniform(delay, delay + 1.0))
+                
+            except Exception as e:
+                self.stdout.write(f"❌ Page {page} failed: {e}")
+                time.sleep(delay * 2)
                 continue
         
-        total_time = time.time() - batch_start_time
-        
-        self.stdout.write(f"\n🎉 INITIAL BULK SCRAPE COMPLETED!")
-        self.stdout.write(f"⏱️ Total time: {int(total_time/60)}m {int(total_time%60)}s")
-        
-        # Comprehensive statistics
-        self.show_comprehensive_stats(user)
+        return all_urls
     
-    def show_comprehensive_stats(self, user):
-        """Show comprehensive statistics after bulk scrape"""
+    def show_final_stats(self):
+        """Show comprehensive statistics"""
+        total = PropertyAnalysis.objects.count()
+        with_agents = PropertyAnalysis.objects.exclude(agent_name='').count()
+        with_emails = PropertyAnalysis.objects.exclude(agent_email='').count()
         
-        # Basic stats
-        total_properties = PropertyAnalysis.objects.filter(scraped_by=user).count()
-        completed_analyses = PropertyAnalysis.objects.filter(scraped_by=user, status='completed').count()
-        with_neighborhoods = PropertyAnalysis.objects.filter(
-            scraped_by=user, 
-            neighborhood__isnull=False
-        ).exclude(neighborhood='').count()
-        
-        # NEW: Agent statistics
-        with_agent_names = PropertyAnalysis.objects.filter(
-            scraped_by=user,
-            agent_name__isnull=False
-        ).exclude(agent_name='').count()
-        
-        with_agent_emails = PropertyAnalysis.objects.filter(
-            scraped_by=user,
-            agent_email__isnull=False
-        ).exclude(agent_email='').count()
-        
-        with_agent_phones = PropertyAnalysis.objects.filter(
-            scraped_by=user,
-            agent_phone__isnull=False
-        ).exclude(agent_phone='').count()
-        
-        self.stdout.write(f"\n📊 SCRAPING STATISTICS:")
-        self.stdout.write(f"🏠 Total properties scraped: {total_properties}")
-        self.stdout.write(f"🏘️ Properties with neighborhoods: {with_neighborhoods} ({with_neighborhoods/total_properties*100:.1f}%)")
-        self.stdout.write(f"🤖 Completed analyses: {completed_analyses}")
-        
-        self.stdout.write(f"\n👥 AGENT INTELLIGENCE DATA:")
-        self.stdout.write(f"🧑‍💼 Properties with agent names: {with_agent_names} ({with_agent_names/total_properties*100:.1f}%)")
-        self.stdout.write(f"📧 Properties with agent emails: {with_agent_emails} ({with_agent_emails/total_properties*100:.1f}%)")
-        self.stdout.write(f"📞 Properties with agent phones: {with_agent_phones} ({with_agent_phones/total_properties*100:.1f}%)")
-        
-        # Top agents by listings
-        top_agents = PropertyAnalysis.objects.filter(
-            scraped_by=user,
-            agent_name__isnull=False
-        ).exclude(
-            agent_name=''
-        ).values('agent_name').annotate(
-            count=Count('id')
-        ).order_by('-count')[:10]
-        
-        if top_agents:
-            self.stdout.write(f"\n🏆 TOP 10 AGENTS BY LISTINGS:")
-            for i, agent in enumerate(top_agents, 1):
-                self.stdout.write(f"  {i:2d}. {agent['agent_name']}: {agent['count']} properties")
-        
-        # Location distribution
-        top_locations = PropertyAnalysis.objects.filter(
-            scraped_by=user
-        ).values('property_location').annotate(
-            count=Count('id')
-        ).order_by('-count')[:5]
-        
-        if top_locations:
-            self.stdout.write(f"\n🌍 TOP 5 LOCATIONS:")
-            for i, location in enumerate(top_locations, 1):
-                self.stdout.write(f"  {i}. {location['property_location']}: {location['count']} properties")
-        
-        # Revenue potential calculation
-        if with_agent_emails > 0:
-            self.stdout.write(f"\n💰 AGENT INTELLIGENCE REVENUE POTENTIAL:")
-            self.stdout.write(f"📧 {with_agent_emails} agent contacts available")
-            
-            # Conservative estimates (10% conversion)
-            conservative_agents = int(with_agent_emails * 0.1)
-            conservative_revenue = conservative_agents * 299  # €299/month per agent
-            
-            # Optimistic estimates (25% conversion)
-            optimistic_agents = int(with_agent_emails * 0.25)
-            optimistic_revenue = optimistic_agents * 299
-            
-            self.stdout.write(f"💼 Conservative (10% conversion): {conservative_agents} agents × €299 = €{conservative_revenue:,}/month")
-            self.stdout.write(f"🚀 Optimistic (25% conversion): {optimistic_agents} agents × €299 = €{optimistic_revenue:,}/month")
+        self.stdout.write(f"\n📊 DATABASE SUMMARY:")
+        self.stdout.write(f"🏠 Total properties: {total:,}")
+        self.stdout.write(f"👨‍💼 With agent names: {with_agents:,} ({with_agents/total*100:.1f}%)")
+        self.stdout.write(f"📧 With agent emails: {with_emails:,} ({with_emails/total*100:.1f}%)")

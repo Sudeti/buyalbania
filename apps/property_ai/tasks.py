@@ -194,11 +194,10 @@ def batch_analyze_pending_properties():
 
 @shared_task
 def daily_property_scrape():
-    """Daily scraping task for new properties"""
+    """Lightweight daily scraping for NEW properties only"""
     from django.contrib.auth import get_user_model
-    from django.core.management import call_command
+    from apps.property_ai.scrapers import Century21AlbaniaScraper
     
-    # Get the first superuser or create a system user
     User = get_user_model()
     system_user = User.objects.filter(is_superuser=True).first()
     
@@ -207,74 +206,107 @@ def daily_property_scrape():
         return "Error: No superuser found"
     
     try:
-        # Run scraping with analysis
-        call_command(
-            'scrape_century21_sales',
-            f'--user-id={system_user.id}',
-            '--max-pages=10',  # Fewer pages for daily updates
-            '--analyze',
-            '--batch-size=15',
-            '--delay=2.5'
-        )
+        scraper = Century21AlbaniaScraper()
         
-        # Also analyze any pending properties
-        batch_analyze_pending_properties.delay()
+        # Only check first 5 pages for new properties
+        urls = scraper.get_sale_property_listings(max_pages=5)
         
-        logger.info("Daily property scrape completed successfully")
-        return "Daily scrape completed"
+        # Filter to only NEW URLs
+        existing_urls = set(PropertyAnalysis.objects.values_list('property_url', flat=True))
+        new_urls = [url for url in urls if url not in existing_urls]
+        
+        if not new_urls:
+            logger.info("No new properties found in daily check")
+            return "No new properties found"
+        
+        # Scrape only the new ones
+        new_count = 0
+        for url in new_urls[:20]:  # Limit to 20 new properties per day
+            try:
+                data = scraper.scrape_property(url)
+                if data and data['price'] > 0:
+                    PropertyAnalysis.objects.create(
+                        user=None,
+                        scraped_by=system_user,
+                        property_url=data['url'],
+                        property_title=data['title'],
+                        property_location=data['location'],
+                        neighborhood=data.get('neighborhood', ''),
+                        asking_price=data['price'],
+                        property_type=data['property_type'],
+                        total_area=data['square_meters'],
+                        property_condition=data['condition'],
+                        floor_level=data['floor_level'],
+                        agent_name=data.get('agent_name', ''),
+                        agent_email=data.get('agent_email', ''),
+                        agent_phone=data.get('agent_phone', ''),
+                        status='analyzing'
+                    )
+                    new_count += 1
+                    
+                    # Queue for analysis
+                    analyze_property_task.delay(PropertyAnalysis.objects.latest('created_at').id)
+                    
+                time.sleep(2)  # Respectful delay
+                
+            except Exception as e:
+                logger.error(f"Error scraping {url}: {e}")
+                continue
+        
+        logger.info(f"Daily scrape completed: {new_count} new properties")
+        return f"Added {new_count} new properties"
         
     except Exception as e:
         logger.error(f"Daily property scrape failed: {e}")
         return f"Daily scrape failed: {e}"
-    
-# Add this to apps/property_ai/tasks.py:
 
 @shared_task
-def nightly_bulk_scrape_task():
-    """Nightly bulk scraping with progressive page increase"""
-    from django.core.management import call_command
+def midnight_bulk_scrape_task():
+    """Safe midnight bulk scraping - 300-500 pages"""
     from django.contrib.auth import get_user_model
-    from .models import PropertyAnalysis
-    import math
+    from django.core.management import call_command
+    import os
     
     try:
-        # Get system user
         User = get_user_model()
         system_user = User.objects.filter(is_superuser=True).first()
         
         if not system_user:
-            logger.error("No superuser found for bulk scraping")
+            logger.error("No superuser found for midnight scraping")
             return "Error: No superuser found"
         
-        # Calculate how many pages to scrape based on current properties
+        # Calculate pages to scrape (progressive approach)
         current_count = PropertyAnalysis.objects.count()
         
-        # Progressive approach: add 100 pages each night
-        # Day 1: 100 pages, Day 2: 200 pages, Day 3: 300 pages, etc.
-        base_pages = 100
-        additional_pages = (current_count // 1200) * 100  # ~12 properties per page
-        max_pages = base_pages + additional_pages
+        if current_count < 1200:  # First few runs
+            pages_to_scrape = 100
+        elif current_count < 3600:  # Building up
+            pages_to_scrape = 200
+        elif current_count < 6000:  # Getting there
+            pages_to_scrape = 300
+        else:  # Final push or maintenance
+            pages_to_scrape = 50  # Just check for new ones
         
-        # Cap at 500 pages total
-        max_pages = min(max_pages, 500)
+        # Calculate start page (avoid re-scraping same pages)
+        estimated_start_page = max(1, (current_count // 12) + 1)
         
-        logger.info(f"Starting nightly bulk scrape: {max_pages} pages")
+        logger.info(f"Midnight scrape: {pages_to_scrape} pages starting from {estimated_start_page}")
         
-        # Run the bulk scrape
+        # Run the bulletproof scraper
         call_command(
             'bulk_scrape_initial',
             f'--user-id={system_user.id}',
-            f'--max-pages={max_pages}',
-            '--analyze',
-            '--delay=2.5'
+            f'--max-pages={pages_to_scrape}',
+            f'--start-page={estimated_start_page}',
+            '--delay=2.5'  # Faster at night when less traffic
         )
         
         new_count = PropertyAnalysis.objects.count()
         scraped_this_run = new_count - current_count
         
-        logger.info(f"Nightly bulk scrape completed: {scraped_this_run} new properties")
+        logger.info(f"Midnight scrape completed: {scraped_this_run} new properties")
         return f"Scraped {scraped_this_run} new properties (total: {new_count})"
         
     except Exception as e:
-        logger.error(f"Nightly bulk scrape failed: {e}")
-        return f"Bulk scrape failed: {e}"
+        logger.error(f"Midnight scrape failed: {e}")
+        return f"Midnight scrape failed: {e}"
