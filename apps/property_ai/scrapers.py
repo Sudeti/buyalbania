@@ -187,6 +187,7 @@ class Century21AlbaniaScraper:
         # Method 2: Simple email patterns directly in text (same as phone)
         email_patterns = [
             r'([a-zA-Z0-9._%+-]+@c21cpm\.al)',     # Century21 emails first
+            r'([a-zA-Z0-9._%+-]+@c21roy\.al)', 
             r'([a-zA-Z0-9._%+-]+@gmail\.com)',     # Gmail emails
             r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',  # Any email
         ]
