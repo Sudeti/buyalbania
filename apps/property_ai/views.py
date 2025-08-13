@@ -48,6 +48,7 @@ def home(request):
     }
     return render(request, 'property_ai/home.html', context)
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def analyze_property(request):
     """Analyze property with strict quota enforcement"""
@@ -118,6 +119,10 @@ def analyze_property(request):
                 total_area=existing_global_analysis.total_area,
                 property_condition=existing_global_analysis.property_condition,
                 floor_level=existing_global_analysis.floor_level,
+
+                agent_name=existing_global_analysis.agent_name,
+                agent_email=existing_global_analysis.agent_email,
+                agent_phone=existing_global_analysis.agent_phone,
                 status='analyzing'
             )
             
@@ -143,6 +148,10 @@ def analyze_property(request):
                 total_area=property_data.get('square_meters'),
                 property_condition=property_data.get('condition', ''),
                 floor_level=property_data.get('floor_level', ''),
+
+                agent_name=property_data.get('agent_name', ''),
+                agent_email=property_data.get('agent_email', ''),
+                agent_phone=property_data.get('agent_phone', ''),
                 status='analyzing'
             )
         
@@ -277,7 +286,7 @@ def get_comparable_properties(analysis):
         logger.error(f"Error getting comparable properties: {e}")
         return []
 
-# apps/property_ai/views.py - UPDATE analysis_detail:
+@login_required
 def analysis_detail(request, analysis_id):
     """Display investment analysis results with access control"""
     analysis = get_object_or_404(PropertyAnalysis, id=analysis_id)
@@ -315,6 +324,7 @@ def analysis_detail(request, analysis_id):
     
     return render(request, 'property_ai/analysis_detail.html', context)
 
+@login_required
 def market_overview(request):
     """Market overview with tier restrictions - PRESERVING ALL EXISTING FEATURES"""
     
@@ -438,7 +448,7 @@ def market_overview(request):
     
     return render(request, 'property_ai/market_overview.html', context)
 
-# NEW: Market analytics API endpoint
+
 def market_analytics_api(request):
     """API endpoint for market analytics"""
     property_type = request.GET.get('type')

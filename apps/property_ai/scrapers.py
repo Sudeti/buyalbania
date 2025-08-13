@@ -114,11 +114,18 @@ class Century21AlbaniaScraper:
                 'square_meters': self._extract_area(text),
                 'condition': self._extract_condition(text),
                 'floor_level': self._extract_floor(text),
+
+                'agent_name': self._extract_agent_name(soup, text),
+                'agent_email': self._extract_agent_email(soup, text),
+                'agent_phone': self._extract_agent_phone(soup, text),
             }
             
             # Only return if we have essential data
             if extracted_data['price'] > 0 and extracted_data['title']:
-                logger.info(f"✅ Sale property extracted: {extracted_data['title'][:50]}...")
+                agent_info = ""
+                if extracted_data['agent_name']:
+                    agent_info = f" (Agent: {extracted_data['agent_name']})"
+                logger.info(f"✅ Sale property extracted: {extracted_data['title'][:50]}...{agent_info}")
                 return extracted_data
             else:
                 logger.debug(f"❌ Insufficient data for: {url}")
@@ -128,6 +135,173 @@ class Century21AlbaniaScraper:
             logger.error(f"Error scraping {url}: {e}")
             return None
     
+    def _extract_agent_name(self, soup, text):
+        """Extract agent name - Simple direct approach like phone extraction"""
+        
+        # Method 1: Look for common Albanian agent names directly in text
+        # Common patterns: Name followed by job title, email, or phone
+        name_patterns = [
+            # Albanian agent name patterns (simple and direct)
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@c21cpm\.al',  # Name before email
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?\+355',        # Name before phone
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agent',        # Name before Agent
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Licensë',      # Name before License
+            
+            # Even simpler patterns
+            r'([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\s*\n',      # Two capitalized words followed by newline
+        ]
+        
+        for pattern in name_patterns:
+            matches = re.findall(pattern, text, re.MULTILINE)
+            for match in matches:
+                cleaned_name = self._clean_agent_name(match)
+                if cleaned_name and self._is_valid_agent_name(cleaned_name):
+                    logger.info(f"✅ Found agent name: {cleaned_name}")
+                    return cleaned_name
+        
+        # Method 2: Look for names near email addresses (like phone does)
+        email_matches = re.finditer(r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', text)
+        for email_match in email_matches:
+            # Look for name in 100 characters before the email
+            start_pos = max(0, email_match.start() - 100)
+            text_before_email = text[start_pos:email_match.start()]
+            
+            # Simple name pattern in the text before email
+            name_match = re.search(r'([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})', text_before_email)
+            if name_match:
+                cleaned_name = self._clean_agent_name(name_match.group(1))
+                if cleaned_name and self._is_valid_agent_name(cleaned_name):
+                    logger.info(f"✅ Found agent name near email: {cleaned_name}")
+                    return cleaned_name
+        
+        return None
+
+    def _extract_agent_email(self, soup, text):
+        """Extract agent email - Simple direct approach like phone extraction"""
+        
+        # Method 1: Try HTML mailto links first (same as phone)
+        email_links = soup.find_all('a', href=True)
+        for link in email_links:
+            href = link.get('href', '')
+            if href.startswith('mailto:'):
+                email = href.replace('mailto:', '').strip()
+                if self._is_valid_email(email):
+                    logger.info(f"✅ Found email in mailto: {email}")
+                    return email.lower()
+        
+        # Method 2: Simple email patterns directly in text (same as phone)
+        email_patterns = [
+            r'([a-zA-Z0-9._%+-]+@c21cpm\.al)',     # Century21 emails first
+            r'([a-zA-Z0-9._%+-]+@gmail\.com)',     # Gmail emails
+            r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',  # Any email
+        ]
+        
+        for pattern in email_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                if self._is_valid_email(match):
+                    logger.info(f"✅ Found email with pattern: {match}")
+                    return match.lower()
+        
+        return None
+
+    def _clean_agent_name(self, name):
+        """Clean agent name - Keep it simple"""
+        if not name:
+            return None
+        
+        # Basic cleaning only
+        name = name.strip()
+        name = re.sub(r'[^\w\s]', ' ', name)  # Remove special chars
+        name = ' '.join(name.split())         # Clean whitespace
+        name = name.title()                   # Capitalize properly
+        
+        return name if len(name) > 3 else None
+
+    def _is_valid_agent_name(self, name):
+        """Simple name validation"""
+        if not name or len(name) < 4 or len(name) > 50:
+            return False
+        
+        words = name.split()
+        if len(words) < 2:  # Must have at least first and last name
+            return False
+        
+        # Each word should be reasonable length and start with capital
+        for word in words:
+            if len(word) < 2 or not word[0].isupper():
+                return False
+        
+        return True
+
+    def _extract_agent_phone(self, soup, text):
+        """Extract agent phone - Enhanced for Albanian format"""
+        
+        phone_patterns = [
+            # Albanian mobile format as shown in image: +355676475921
+            r'\+355[6-9][0-9]{8}',  # More precise - Albanian mobile numbers
+            r'355[6-9][0-9]{8}',    # Without the +
+            r'0[6-9][0-9]{8}',      # Albanian domestic format
+        ]
+        
+        # Try HTML tel: links first
+        phone_links = soup.find_all('a', href=True)
+        for link in phone_links:
+            href = link.get('href', '')
+            if href.startswith('tel:'):
+                phone = href.replace('tel:', '').strip()
+                cleaned = self._clean_phone_number(phone)
+                if cleaned:
+                    return cleaned
+        
+        # Try regex patterns
+        for pattern in phone_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches:
+                cleaned = self._clean_phone_number(match)
+                if cleaned:
+                    return cleaned
+        
+        return None
+
+    def _clean_phone_number(self, phone):
+        """Clean Albanian phone number"""
+        if not phone:
+            return None
+        
+        # Remove all non-digit characters except +
+        phone = re.sub(r'[^\d\+]', '', phone)
+        
+        # Standardize Albanian mobile numbers
+        if phone.startswith('355') and not phone.startswith('+'):
+            phone = '+' + phone
+        elif phone.startswith('06') or phone.startswith('07') or phone.startswith('08') or phone.startswith('09'):
+            phone = '+355' + phone[1:]  # Remove the 0 and add country code
+        elif len(phone) == 9 and phone[0] in '6789':  # 9 digits starting with 6,7,8,9
+            phone = '+355' + phone
+        
+        # Validate Albanian mobile format: +355 followed by 9 digits starting with 6,7,8,9
+        if re.match(r'\+355[6-9][0-9]{8}', phone):
+            return phone
+        
+        return None
+
+    def _is_valid_email(self, email):
+        """Enhanced email validation"""
+        if not email:
+            return False
+        
+        # Basic email format check
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, email):
+            return False
+        
+        # Check length
+        if len(email) > 100:
+            return False
+        
+        return True
+
     def _extract_title(self, soup):
         """Extract title - IMPROVED ALBANIAN"""
         # Try multiple selectors
@@ -311,6 +485,41 @@ class Century21AlbaniaScraper:
             return f'floor_{match.group(1)}'
         
         return ''
+
+    # In apps/property_ai/scrapers.py - ADD this method:
+
+def get_specific_page_listings(self, page_number):
+    """Get property URLs from a specific page number"""
+    urls_to_try = [
+        f"{self.base_url}/properties?page={page_number}",
+        f"{self.base_url}/en/properties?page={page_number}",
+    ]
+    
+    property_urls = []
+    
+    for url in urls_to_try:
+        try:
+            logger.info(f"🔍 Fetching page {page_number}: {url}")
+            response = self.session.get(url, timeout=30)
+            if response.status_code == 200:
+                page_urls = self._extract_urls_from_page(response.content, url)
+                if page_urls:
+                    property_urls.extend(page_urls)
+                    logger.info(f"📋 Found {len(page_urls)} properties on page {page_number}")
+                    break
+                else:
+                    logger.warning(f"⚠️ No properties found on page {page_number}")
+            else:
+                logger.warning(f"⚠️ HTTP {response.status_code} for page {page_number}")
+                
+        except Exception as e:
+            logger.error(f"❌ Error getting page {page_number} from {url}: {e}")
+            continue
+    
+    # Add small delay to be respectful
+    time.sleep(random.uniform(1, 2))
+    
+    return list(set(property_urls))  # Remove duplicates
 
 # Backward compatibility
 Century21Scraper = Century21AlbaniaScraper

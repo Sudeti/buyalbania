@@ -86,6 +86,12 @@ class PropertyAnalysis(TimeStampedModel):
     last_checked = models.DateTimeField(null=True, blank=True, help_text="Last time URL was verified")
     removed_date = models.DateTimeField(null=True, blank=True, help_text="When property was no longer accessible")
     
+    agent_name = models.CharField(max_length=100, blank=True, null=True, 
+                                help_text="Agent handling this property")
+    agent_email = models.EmailField(blank=True, null=True, 
+                                  help_text="Agent email contact")
+    agent_phone = models.CharField(max_length=20, blank=True, null=True,
+                                 help_text="Agent phone number")
     # ADD: Tier access control
     def is_available_to_user(self, user):
         """Strict tier-based access control"""
@@ -173,7 +179,24 @@ class PropertyAnalysis(TimeStampedModel):
             models.Index(fields=['investment_score']),
             models.Index(fields=['status']),
             models.Index(fields=['scraped_by']),  # New index
+            models.Index(fields=['agent_name']),
         ]
     
     def __str__(self):
         return f"Investment Analysis: {self.property_title}"
+    
+
+
+class ScrapingProgress(models.Model):
+    last_scraped_page = models.IntegerField(default=0)
+    total_properties_found = models.IntegerField(default=0)
+    bootstrap_complete = models.BooleanField(default=False)
+    last_update = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name_plural = "Scraping Progress"
+    
+    @classmethod
+    def get_current(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj

@@ -2,295 +2,398 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Property Investment Analysis{% endblock %}</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="{% block meta_description %}AI-powered property investment analysis for Albanian real estate. Get professional insights and market analysis instantly.{% endblock %}">
-    <meta name="keywords" content="{% block meta_keywords %}AI property analysis, real estate investment, Albanian property, Century 21, investment analysis, property market{% endblock %}">
-    <meta name="author" content="AI Property Analysis">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="og:title" content="{% block og_title %}AI Property Investment Analysis - Professional Real Estate Insights{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}AI-powered property investment analysis for Albanian real estate. Get professional insights instantly.{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'property_ai/img/og-image.jpg' %}{% endblock %}">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{% static 'property_ai/favicon.ico' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'property_ai/apple-touch-icon.png' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'property_ai/favicon-32x32.png' %}">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
-    <meta property="twitter:title" content="{% block twitter_title %}{{ block.super }}{% endblock %}">
-    <meta property="twitter:description" content="{% block twitter_description %}{{ block.super }}{% endblock %}">
-    <meta property="twitter:image" content="{% block twitter_image %}{{ block.super }}{% endblock %}">
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}">
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Property AI CSS -->
-    <link href="{% static 'property_ai/css/property-ai.css' %}" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --accent-color: #10b981;
-            --dark-color: #2c3e50;
-            --light-color: #ecf0f1;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--dark-color);
-        }
-        
-        .navbar-brand {
-            font-weight: bold;
-            color: var(--primary-color) !important;
-        }
-        
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 80px 0;
-        }
-        
-        .feature-card {
-            transition: transform 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: #5a6fd8;
-            border-color: #5a6fd8;
-        }
-        
-        .btn-success {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        
-        .property-card {
-            border: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-            margin-bottom: 20px;
-        }
-        
-        .property-card:hover {
-            transform: translateY(-3px);
-        }
-        
-        .price-badge {
-            background-color: var(--accent-color);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-        
-        .step-number {
-            background: var(--primary-color);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin: 0 auto 15px;
-        }
-        
-        .footer {
-            background-color: var(--dark-color);
-            color: white;
-            padding: 40px 0 20px;
-            margin-top: 80px;
-        }
-        
-        .alert-custom {
-            border-left: 4px solid var(--primary-color);
-            background-color: #f8f9fa;
-        }
-        
-        .navbar-logo {
-            height: 40px;
-            width: auto;
-        }
-        
-        .footer-logo {
-            height: 30px;
-            width: auto;
-        }
-    </style>
-    
-    {% block extra_css %}{% endblock %}
+  <!-- Base -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}AI Property Investment Analysis{% endblock %}</title>
+
+  <!-- SEO -->
+  <meta name="description" content="{% block meta_description %}AI-powered investment analysis for Albanian real estate — data-driven insights, risk scoring, and professional reports.{% endblock %}">
+  <meta name="author" content="AI Property Analysis">
+
+  <!-- Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+  <meta property="og:title" content="{% block og_title %}AI Property Investment Analysis{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}AI-powered investment analysis for Albanian real estate.{% endblock %}" />
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'property_ai/img/og-image.jpg' %}" />
+
+  <!-- Fonts (preload + use) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" href="{% static 'property_ai/favicon.ico' %}">
+
+  <!-- CSS libs -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <!-- AOS (Animate On Scroll) -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <!-- Core Styles -->
+  <style>
+    :root{
+      --bg-deep:#0f1724; /* deep navy */
+      --card-glass: rgba(255,255,255,0.06);
+      --accent: #d4af37; /* gold */
+      --muted: rgba(255,255,255,0.72);
+      --glass-strong: rgba(255,255,255,0.08);
+      --radius: 14px;
+      --max-width: 1200px;
+    }
+
+    /* Page */
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(20,30,45,0.45), transparent 10%),
+                  radial-gradient(800px 400px at 90% 90%, rgba(16,22,36,0.5), transparent 10%),
+                  var(--bg-deep);
+      color: #fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.5;
+    }
+
+    /* Subtle svg texture overlay */
+    .bg-pattern {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.06;
+    }
+
+    /* NAV */
+    .navbar {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(8px);
+      transition: padding 240ms ease, box-shadow 240ms ease, background 240ms ease;
+      padding: 18px 0;
+    }
+    .navbar.shrink { padding: 8px 0; box-shadow: 0 8px 30px rgba(2,6,23,0.6); }
+    .navbar-brand { font-family: "Playfair Display", serif; color: var(--accent) !important; font-weight:700; display:flex; align-items:center; gap:.6rem; }
+    .navbar-logo{ height:38px; width:auto; display:inline-block; }
+
+    .nav-link { color: var(--muted) !important; transition: color .18s ease; }
+    .nav-link:focus, .nav-link:hover { color: #fff !important; text-decoration: none; }
+
+    /* HERO */
+    .hero {
+      min-height: 78vh;
+      display:flex;
+      align-items:center;
+      position:relative;
+      padding-top:6.5rem;
+      padding-bottom:4rem;
+    }
+    .hero .card-hero {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius: calc(var(--radius) + 6px);
+      padding: 3.2rem;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap: 2rem;
+      align-items:center;
+      border: 1px solid rgba(255,255,255,0.04);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-title {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2rem, 3.8vw, 2.9rem);
+      line-height:1.02;
+      margin:0 0 .8rem 0;
+      color: #fff;
+    }
+    .hero-sub {
+      color: var(--muted);
+      margin-bottom:1.35rem;
+      max-width:60ch;
+    }
+
+    .cta-row { display:flex; gap:.9rem; align-items:center; flex-wrap:wrap; }
+    .btn-primary-cta {
+      background: var(--accent);
+      color: #08101a;
+      border: none;
+      padding: .76rem 1.4rem;
+      border-radius: 999px;
+      font-weight:600;
+      box-shadow: 0 8px 24px rgba(212,175,55,0.12);
+    }
+    .btn-ghost { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); border-radius:999px; padding:.6rem 1rem; }
+
+    /* Hero stats (right column) */
+    .hero-stats { display:flex; flex-direction:column; gap:.8rem; }
+    .stat-pill { background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:.8rem 1rem; border-radius:12px; display:flex; align-items:center; gap:.8rem; border:1px solid rgba(255,255,255,0.03); }
+    .stat-value { font-weight:700; color:#fff; font-size:1.05rem; }
+
+    /* FEATURES */
+    .features { max-width: var(--max-width); margin: 3.5rem auto; display:grid; grid-template-columns: repeat(3,1fr); gap:1.25rem; padding:0 1rem; }
+    .glass-card {
+      background: var(--card-glass);
+      border-radius: var(--radius);
+      padding:1.6rem;
+      min-height: 140px;
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      transition: transform .28s ease, box-shadow .28s ease;
+    }
+    .glass-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(2,6,23,0.7); }
+
+    .feature-icon {
+      width:56px;height:56px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border:1px solid rgba(255,255,255,0.03);
+      font-size:1.1rem;
+      margin-bottom:.6rem;
+      color:var(--accent);
+    }
+    .feature-title { font-weight:600; margin-bottom:.35rem; color:#fff; }
+    .feature-desc { color:var(--muted); font-size:.95rem; }
+
+    /* TRUST / BADGES */
+    .trust { display:flex; gap:1rem; align-items:center; justify-content:center; flex-wrap:wrap; margin-top:1.2rem; color:var(--muted); }
+    .trust .badge { background: transparent; border:1px solid rgba(255,255,255,0.04); padding:.45rem .75rem; border-radius:999px; }
+
+    /* FOOTER */
+    .footer {
+      margin-top: 3.8rem;
+      padding: 3rem 0;
+      border-top:1px solid rgba(255,255,255,0.03);
+      color: var(--muted);
+    }
+    .footer a { color: var(--muted); text-decoration:none; }
+    .footer a:hover { color: #fff; }
+
+    /* Responsive */
+    @media (max-width: 991px){
+      .hero .card-hero { grid-template-columns: 1fr; padding: 2rem; }
+      .features { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 640px){
+      .features { grid-template-columns: 1fr; gap:1rem; padding:0 1rem; }
+      .stat-pill { flex-direction:column; align-items:flex-start; }
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
 </head>
+
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'property_ai:home' %}">
-                <img src="{% static 'property_ai/logo.png' %}" alt="AI Property Logo" class="navbar-logo me-2">
-                <i class="fas fa-building"></i> AI Property
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-               <ul class="navbar-nav me-auto">
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'property_ai:analyze_property' %}">Analyze</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'property_ai:market_overview' %}">Market</a>
-    </li>
-    {% if user.is_authenticated %}
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'property_ai:my_analyses' %}">My Analyses</a>
-    </li>
-    {% endif %}
-</ul>
-<!-- Around line 115, update the navbar -->
-<ul class="navbar-nav">
-    {% if user.is_authenticated %}
-    <!-- ADD: Show user tier and quota -->
-    {% if user.profile %}
-    <li class="nav-item">
-        <span class="navbar-text me-3">
-            <small>
-                {{ user.profile.subscription_tier|title }}
-                {% if user.profile.subscription_tier != 'premium' %}
-                    | {{ user.profile.remaining_analyses }} left
-                {% endif %}
-            </small>
-        </span>
-    </li>
-    {% endif %}
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-            <i class="fas fa-user"></i> {{ user.username }}
-        </a>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">Profile</a></li>
-            <li><a class="dropdown-item" href="{% url 'property_ai:my_analyses' %}">My Analyses</a></li>
-            {% if user.profile and user.profile.subscription_tier != 'premium' %}
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-success" href="#upgrade">
-                <i class="fas fa-arrow-up me-2"></i>Upgrade Plan
-            </a></li>
+  <!-- subtle repeating SVG pattern (low opacity) -->
+  <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 800" aria-hidden="true">
+    <defs>
+      <pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse">
+        <rect width="80" height="80" fill="none"/>
+        <path d="M0 80 L80 0" stroke="#fff" stroke-width="1" stroke-opacity="0.03"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#p)"></rect>
+  </svg>
+
+  <!-- NAV -->
+  <nav id="mainNav" class="navbar navbar-expand-lg navbar-light fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'property_ai:home' %}">
+        <img src="{% static 'property_ai/logo.png' %}" alt="AI Property logo" class="navbar-logo" />
+        AI Property
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse" aria-controls="navCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navCollapse">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="{% url 'property_ai:analyze_property' %}">Analyze</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'property_ai:market_overview' %}">Market</a></li>
+          {% if user.is_authenticated %}
+            <li class="nav-item d-lg-none"><a class="nav-link" href="{% url 'property_ai:my_analyses' %}">My Analyses</a></li>
+          {% endif %}
+          {% if user.is_authenticated %}
+            {% if user.profile %}
+              <li class="nav-item d-none d-lg-inline-block"><span class="nav-link small">{{ user.profile.subscription_tier|title }}{% if user.profile.subscription_tier != 'premium' %} • {{ user.profile.remaining_analyses }} left{% endif %}</span></li>
             {% endif %}
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-user"></i> {{ user.username }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'property_ai:my_analyses' %}">My Analyses</a></li>
+                {% if user.profile and user.profile.subscription_tier != 'premium' %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item text-success" href="#upgrade"><i class="fa-solid fa-arrow-up me-2"></i>Upgrade Plan</a></li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Login</a></li>
+            <li class="nav-item ms-2"><a class="btn btn-sm btn-primary-cta" href="{% url 'accounts:register' %}">Sign Up Free</a></li>
+          {% endif %}
         </ul>
-    </li>
-    {% else %}
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link btn btn-primary text-white ms-2 px-3" href="{% url 'accounts:register' %}">Sign Up Free</a>
-    </li>
-    {% endif %}
-</ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Messages -->
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            <i class="fas fa-info-circle me-2"></i>
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
+      </div>
     </div>
-    {% endif %}
+  </nav>
 
-    <!-- Main Content -->
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+  <!-- HERO -->
+  <header class="hero" role="banner" aria-label="Hero section">
+    <div class="card-hero" data-aos="fade-up" data-aos-duration="900" data-aos-delay="80">
+      <div>
+        <h1 class="hero-title">Intelligent real estate investment decisions — backed by data.</h1>
+        <p class="hero-sub">AI-powered scoring, localized Albanian market insights, rental & yield forecasts, and professional PDF reports built to inform confident investments.</p>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <h5>
-                        <img src="{% static 'property_ai/logo.png' %}" alt="AI Property Logo" class="footer-logo me-2">
-                        AI Property Analysis
-                    </h5>
-                    <p>Professional property investment analysis powered by artificial intelligence.</p>
-                    <p class="mt-2" style="font-size:0.95em;">
-                        <strong>Contact:</strong> <a href="mailto:support@aipropertyanalysis.com" class="text-white">support@aipropertyanalysis.com</a>
-                    </p>
-                </div>
-                <div class="col-md-4">
-                    <h6>Quick Links</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="{% url 'property_ai:home' %}" class="text-white-50">Home</a></li>
-                        <li><a href="{% url 'property_ai:analyze_property' %}" class="text-white-50">Analyze Property</a></li>
-                        <li><a href="{% url 'accounts:privacy_policy' %}" class="text-white-50">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h6>Analysis Features</h6>
-                    <ul class="list-unstyled">
-                        <li class="text-white-50">Investment Scoring</li>
-                        <li class="text-white-50">Market Comparison</li>
-                        <li class="text-white-50">Rental Yield Analysis</li>
-                        <li class="text-white-50">Risk Assessment</li>
-                        <li class="text-white-50">Professional Reports</li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="mt-4 mb-3">
-            <div class="row">
-                <div class="col-md-6">
-                    <p>&copy; 2025 AI Property Analysis. All rights reserved.</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <p>Made with <i class="fas fa-heart text-danger"></i> for Albanian real estate</p>
-                </div>
-            </div>
+        <div class="cta-row" role="group" aria-label="Primary call to actions">
+          <a class="btn btn-primary-cta" href="{% url 'property_ai:analyze_property' %}">Start free analysis</a>
+          <a class="btn btn-ghost" href="{% url 'property_ai:market_overview' %}">Explore market overview</a>
         </div>
-    </footer>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Property AI JS -->
-    <script src="{% static 'property_ai/js/property-ai.js' %}"></script>
-    
-    {% block extra_js %}{% endblock %}
+        <div class="trust" aria-hidden="false" role="list">
+          <div class="badge" role="listitem"><i class="fa-solid fa-shield-check me-2"></i>GDPR friendly</div>
+          <div class="badge" role="listitem"><i class="fa-solid fa-file-lines me-2"></i>Downloadable reports</div>
+          <div class="badge" role="listitem"><i class="fa-solid fa-globe me-2"></i>Albanian market data</div>
+        </div>
+      </div>
+
+      <aside class="hero-stats" aria-hidden="false">
+        <div class="stat-pill" data-aos="fade-left" data-aos-delay="180">
+          <div class="stat-value">+2,400</div>
+          <div class="stat-desc" style="color:var(--muted);">Analyses performed</div>
+        </div>
+        <div class="stat-pill" data-aos="fade-left" data-aos-delay="260">
+          <div class="stat-value">4.8/5</div>
+          <div class="stat-desc" style="color:var(--muted);">Average client confidence</div>
+        </div>
+        <div class="stat-pill" data-aos="fade-left" data-aos-delay="340">
+          <div class="stat-value">Instant</div>
+          <div class="stat-desc" style="color:var(--muted);">Reports & scoring</div>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <!-- NOTIFICATIONS -->
+  <div class="container" style="max-width:var(--max-width); margin-top:1rem; padding:0 1rem;">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-3" role="alert" data-aos="fade-up">
+          <i class="fa-solid fa-info-circle me-2"></i> {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- FEATURES (animated) -->
+  <section class="features" aria-labelledby="featuresHeading" role="region">
+    <h2 id="featuresHeading" class="visually-hidden">Platform features</h2>
+
+    <div class="glass-card" data-aos="fade-up" data-aos-delay="60">
+      <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <div>
+        <div class="feature-title">Investment Scoring</div>
+        <div class="feature-desc">Data-driven score combining location, price dynamics, and rental potential — clear and comparable.</div>
+      </div>
+    </div>
+
+    <div class="glass-card" data-aos="fade-up" data-aos-delay="140">
+      <div class="feature-icon"><i class="fa-solid fa-house-chimney"></i></div>
+      <div>
+        <div class="feature-title">Market Comparison</div>
+        <div class="feature-desc">Compare neighborhoods, historical trends, and comparable listings within Tirana and nationwide.</div>
+      </div>
+    </div>
+
+    <div class="glass-card" data-aos="fade-up" data-aos-delay="220">
+      <div class="feature-icon"><i class="fa-solid fa-file-pdf"></i></div>
+      <div>
+        <div class="feature-title">Professional Reports</div>
+        <div class="feature-desc">Download PDF reports designed for investors, banks, and property managers.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT SLOT -->
+  <main class="container" style="max-width:var(--max-width); padding: 2.2rem 1rem;" aria-live="polite">
+    {% block content %}
+    <!-- default content can go here -->
+    {% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container" style="max-width:var(--max-width);">
+      <div class="row">
+        <div class="col-md-5">
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;">
+            <img src="{% static 'property_ai/logo.png' %}" alt="AI Property logo" style="height:30px;">
+            <strong style="color:#fff">AI Property Analysis</strong>
+          </div>
+          <p style="margin:0 .2rem 0 0; color:var(--muted);">Professional property investment analysis powered by AI. Local expertise with global standards.</p>
+          <p class="mt-2" style="color:var(--muted);"><strong>Contact:</strong> <a href="mailto:support@aipropertyanalysis.com">support@aipropertyanalysis.com</a></p>
+        </div>
+
+        <div class="col-md-2">
+          <h6 style="color:#fff">Explore</h6>
+          <ul style="list-style:none;padding:0;margin:0;color:var(--muted)">
+            <li><a href="{% url 'property_ai:home' %}">Home</a></li>
+            <li><a href="{% url 'property_ai:analyze_property' %}">Analyze Property</a></li>
+            <li><a href="{% url 'accounts:privacy_policy' %}">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="col-md-3">
+          <h6 style="color:#fff">Features</h6>
+          <ul style="list-style:none;padding:0;margin:0;color:var(--muted)">
+            <li>Investment Scoring</li>
+            <li>Market Comparison</li>
+            <li>Rental Yield Analysis</li>
+          </ul>
+        </div>
+
+        <div class="col-md-2 text-md-end" style="align-self:center;">
+          <small style="color:var(--muted)">&copy; 2025 AI Property Analysis</small>
+          <div style="margin-top:.6rem;color:var(--muted)">Made with <i class="fa-solid fa-heart" style="color:#e25555"></i> for Albanian real estate</div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
+
+  <script>
+    // init AOS
+    document.addEventListener('DOMContentLoaded', function(){
+      if(window.AOS) AOS.init({ once: true, duration: 700, easing: 'ease-out-cubic' });
+
+      // shrink navbar on scroll
+      const nav = document.getElementById('mainNav');
+      const shrinkTrigger = 80;
+      function onScroll(){
+        if(window.scrollY > shrinkTrigger) nav.classList.add('shrink'); else nav.classList.remove('shrink');
+      }
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      // smooth scroll for internal anchors
+      document.querySelectorAll('a[href^="#"]').forEach(a=>{
+        a.addEventListener('click', function(e){
+          const target = document.querySelector(this.getAttribute('href'));
+          if(target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth', block:'start'}); }
+        });
+      });
+    });
+  </script>
+
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

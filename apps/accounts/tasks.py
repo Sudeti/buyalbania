@@ -14,23 +14,23 @@ def cleanup_inactive_users():
     Delete users who haven't logged in for over 3 years (GDPR compliance)
     """
     try:
-        cutoff_date = timezone.now() - timedelta(days=3*365)  # 3 years
+        cutoff_date = timezone.now() - timedelta(days=365)  # 3 years
         inactive_users = User.objects.filter(last_login__lt=cutoff_date)
         
         for user in inactive_users:
-            logger.info(f"Deleting inactive user account for {user.email} due to 3-year inactivity")
+            logger.info(f"Deleting inactive user account for {user.email} due to 1-year inactivity")
             # Send notification email before deletion
             from django.core.mail import send_mail
             send_mail(
                 subject='Your Account Will Be Deleted Due to Inactivity',
-                message=f'Your AI Vacation Recommendations account has been inactive for over 3 years and will be deleted in accordance with our data retention policy. If you wish to keep your account, please log in within the next 30 days.',
+                message=f'Your AI Vacation Recommendations account has been inactive for over 1 year and will be deleted in accordance with our data retention policy. If you wish to keep your account, please log in within the next 30 days.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
                 fail_silently=True
             )
         
         # Give users 30 days notice before actual deletion
-        really_old_cutoff = timezone.now() - timedelta(days=3*365 + 30)
+        really_old_cutoff = timezone.now() - timedelta(days=365 + 30)
         very_inactive_users = User.objects.filter(last_login__lt=really_old_cutoff)
         deletion_count = very_inactive_users.count()
         very_inactive_users.delete()
@@ -40,7 +40,7 @@ def cleanup_inactive_users():
     except Exception as e:
         logger.error(f"Error in cleanup_inactive_users task: {e}")
 
-# apps/accounts/tasks.py - ADD THIS:
+
 @shared_task
 def reset_monthly_quotas():
     """Reset monthly quotas for all users on the 1st of each month"""

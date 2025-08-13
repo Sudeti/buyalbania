@@ -112,8 +112,7 @@ def check_property_urls_task():
     except Exception as e:
         logger.error(f"Property URL check failed: {e}")
         return f"Error: {e}"
-    
-# apps/property_ai/tasks.py (add this to your existing tasks.py)
+
 
 @shared_task(bind=True, max_retries=3)
 def analyze_property_task(self, property_analysis_id):
@@ -137,6 +136,10 @@ def analyze_property_task(self, property_analysis_id):
             'square_meters': property_analysis.total_area,
             'condition': property_analysis.property_condition,
             'floor_level': property_analysis.floor_level,
+
+            'agent_name': property_analysis.agent_name,
+            'agent_email': property_analysis.agent_email,
+            'agent_phone': property_analysis.agent_phone,
         }
         
         # Get comparable properties
@@ -188,7 +191,6 @@ def batch_analyze_pending_properties():
     
     return f"Queued analysis for {pending_properties.count()} properties"
 
-# apps/property_ai/tasks.py (add to your existing tasks.py)
 
 @shared_task
 def daily_property_scrape():
@@ -224,3 +226,147 @@ def daily_property_scrape():
     except Exception as e:
         logger.error(f"Daily property scrape failed: {e}")
         return f"Daily scrape failed: {e}"
+    
+# Add these imports at the top
+import random
+import time
+from .scrapers import Century21AlbaniaScraper
+
+# Add these new tasks to apps/property_ai/tasks.py
+# In apps/property_ai/tasks.py - UPDATE the bootstrap_scrape_batch task:
+
+@shared_task(bind=True, max_retries=3)
+def bootstrap_scrape_batch(self, start_page=None, pages_per_batch=50):
+    """Scrape a batch of pages nightly until complete"""
+    from .models import ScrapingProgress
+    
+    progress = ScrapingProgress.get_current()
+    
+    # Auto-resume from where we left off
+    if start_page is None:
+        start_page = progress.last_scraped_page + 1
+    
+    # Skip if bootstrap already complete
+    if progress.bootstrap_complete:
+        logger.info("Bootstrap already complete - skipping")
+        return "Bootstrap already complete"
+    
+    scraper = Century21AlbaniaScraper()
+    new_properties = 0
+    processed_pages = 0
+    
+    try:
+        for page in range(start_page, start_page + pages_per_batch):
+            try:
+                # FIX: Get URLs from the specific page number
+                page_urls = scraper.get_specific_page_listings(page)
+                
+                if not page_urls:  # No more pages or no properties found
+                    logger.info(f"No URLs found on page {page} - may have reached end")
+                    break
+                    
+                for url in page_urls:
+                    if PropertyAnalysis.objects.filter(property_url=url).exists():
+                        continue
+                    
+                    property_data = scraper.scrape_property(url)
+                    if property_data and property_data.get('price', 0) > 0:
+                        PropertyAnalysis.objects.create(
+                            property_url=url,
+                            property_title=property_data['title'],
+                            property_location=property_data['location'],
+                            neighborhood=property_data.get('neighborhood', ''),
+                            asking_price=property_data['price'],
+                            property_type=property_data['property_type'],
+                            total_area=property_data.get('square_meters'),
+                            property_condition=property_data.get('condition', ''),
+                            floor_level=property_data.get('floor_level', ''),
+                            # Agent fields
+                            agent_name=property_data.get('agent_name', ''),
+                            agent_email=property_data.get('agent_email', ''),
+                            agent_phone=property_data.get('agent_phone', ''),
+                            status='analyzing'
+                        )
+                        new_properties += 1
+                
+                processed_pages += 1
+                logger.info(f"✅ Processed page {page}: found {len(page_urls)} URLs")
+                
+                # Rate limiting
+                time.sleep(random.uniform(2, 4))
+                
+            except Exception as e:
+                logger.error(f"Error scraping page {page}: {e}")
+                continue
+        
+        # Update progress
+        progress.last_scraped_page = start_page + processed_pages - 1
+        progress.total_properties_found = PropertyAnalysis.objects.count()
+        
+        if processed_pages < pages_per_batch:  # We reached the end
+            progress.bootstrap_complete = True
+            logger.info("Bootstrap scraping complete - switching to maintenance mode")
+        
+        progress.save()
+        
+        # Queue next batch if needed
+        if not progress.bootstrap_complete:
+            bootstrap_scrape_batch.apply_async(
+                kwargs={'pages_per_batch': pages_per_batch},
+                countdown=300  # 5 minute delay
+            )
+        
+        return f"Scraped {new_properties} new properties from pages {start_page}-{start_page+processed_pages-1}"
+        
+    except Exception as e:
+        logger.error(f"Bootstrap batch failed: {e}")
+        raise self.retry(countdown=1800)  # Retry in 30 minutes
+
+
+@shared_task
+def nightly_maintenance_scrape():
+    """Light scraping for new listings only (after bootstrap)"""
+    from .models import ScrapingProgress
+    
+    progress = ScrapingProgress.get_current()
+    
+    # Only run if bootstrap is complete
+    if not progress.bootstrap_complete:
+        return "Bootstrap not complete - skipping maintenance"
+    
+    scraper = Century21AlbaniaScraper()
+    
+    # Only check first 10 pages for new listings
+    urls = scraper.get_sale_property_listings(max_pages=10)
+    
+    new_count = 0
+    for url in urls:
+        if PropertyAnalysis.objects.filter(property_url=url).exists():
+            continue
+            
+        try:
+            property_data = scraper.scrape_property(url)
+            if property_data and property_data.get('price', 0) > 0:
+                PropertyAnalysis.objects.create(
+                    property_url=url,
+                    property_title=property_data['title'],
+                    property_location=property_data['location'],
+                    neighborhood=property_data.get('neighborhood', ''),
+                    asking_price=property_data['price'],
+                    property_type=property_data['property_type'],
+                    total_area=property_data.get('square_meters'),
+                    property_condition=property_data.get('condition', ''),
+                    floor_level=property_data.get('floor_level', ''),
+
+                    agent_name=property_data.get('agent_name', ''),
+                    agent_email=property_data.get('agent_email', ''),
+                    agent_phone=property_data.get('agent_phone', ''),
+                    status='analyzing'
+                )
+                new_count += 1
+                time.sleep(random.uniform(2, 4))
+                
+        except Exception as e:
+            logger.error(f"Maintenance scrape error: {e}")
+    
+    return f"Maintenance: {new_count} new properties found"
