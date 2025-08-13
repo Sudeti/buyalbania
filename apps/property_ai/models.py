@@ -200,3 +200,17 @@ class ScrapingProgress(models.Model):
     def get_current(cls):
         obj, created = cls.objects.get_or_create(id=1)
         return obj
+    
+
+class ComingSoonSubscription(models.Model):
+    """Simple email collection for coming soon page"""
+    email = models.EmailField(unique=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-subscribed_at']
+        verbose_name = "Coming Soon Subscription"
+        verbose_name_plural = "Coming Soon Subscriptions"
+    
+    def __str__(self):
+        return f"{self.email} ({self.subscribed_at.strftime('%Y-%m-%d')})"

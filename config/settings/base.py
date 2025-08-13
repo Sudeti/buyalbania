@@ -61,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
+     'apps.property_ai.middleware.MaintenanceModeMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -251,3 +252,5 @@ SESSION_COOKIE_AGE = 86400  # 1 day
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store in database
+
+MAINTENANCE_MODE = True 

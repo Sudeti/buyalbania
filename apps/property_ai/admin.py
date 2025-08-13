@@ -508,3 +508,14 @@ class ScrapingProgressAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+    
+from django.contrib import admin
+from .models import ComingSoonSubscription
+
+@admin.register(ComingSoonSubscription)
+class ComingSoonSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ['email', 'subscribed_at']
+    list_filter = ['subscribed_at']
+    search_fields = ['email']
+    readonly_fields = ['subscribed_at']
+    ordering = ['-subscribed_at']
