@@ -10,6 +10,9 @@ class Command(BaseCommand):
         pending = PropertyAnalysis.objects.filter(status='analyzing').count()
         analyzed = PropertyAnalysis.objects.filter(status='completed').count()
         
+        # Fix: Handle division by zero
+        completion_percentage = (analyzed / total * 100) if total > 0 else 0.0
+        
         self.stdout.write(f"""
 📊 Scraping Status:
 - Last scraped page: {progress.last_scraped_page}
@@ -17,6 +20,6 @@ class Command(BaseCommand):
 - Total properties: {total:,}
 - Pending analysis: {pending:,}
 - Analyzed: {analyzed:,}
-- Completion: {(analyzed/total*100):.1f}% analyzed
+- Completion: {completion_percentage:.1f}% analyzed
 - Last update: {progress.last_update.strftime('%Y-%m-%d %H:%M')}
         """)
