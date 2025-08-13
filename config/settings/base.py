@@ -191,20 +191,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.property_ai.tasks.check_property_urls_task',
         'schedule': crontab(hour=3, minute=0, day_of_week=0),  # Sunday 3 AM
     },
+    # NEW: Nightly bulk scrape
+    'nightly-bulk-scrape': {
+        'task': 'apps.property_ai.tasks.nightly_bulk_scrape_task',
+        'schedule': crontab(hour=1, minute=30),  # 1:30 AM daily
+    },
 
-    # NEW: Bootstrap scraping
-    'bootstrap-scraping': {
-        'task': 'apps.property_ai.tasks.bootstrap_scrape_batch',
-        'schedule': crontab(hour=1, minute=0),  # 1 AM daily
-        'kwargs': {'pages_per_batch': 50}
-    },
-    
-    
-    # NEW: Maintenance scraping (runs after bootstrap complete)
-    'nightly-maintenance': {
-        'task': 'apps.property_ai.tasks.nightly_maintenance_scrape',
-        'schedule': crontab(hour=2, minute=0),  # 2 AM daily
-    },
 }
 
 # REST Framework configuration

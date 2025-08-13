@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from .models import PropertyAnalysis, ScrapingProgress
+from .models import PropertyAnalysis
 from .tasks import analyze_property_task
 from .ai_engine import PropertyAI
 import logging
@@ -496,18 +496,6 @@ class PropertyAnalysisAdmin(admin.ModelAdmin):
         """Restrict deletion to superusers"""
         return request.user.is_superuser
 
-
-@admin.register(ScrapingProgress)
-class ScrapingProgressAdmin(admin.ModelAdmin):
-    list_display = ['id', 'last_scraped_page', 'total_properties_found', 'bootstrap_complete', 'last_update']
-    readonly_fields = ['last_update']
-    
-    def has_add_permission(self, request):
-        # Only allow one instance
-        return not ScrapingProgress.objects.exists()
-    
-    def has_delete_permission(self, request, obj=None):
-        return request.user.is_superuser
     
 from django.contrib import admin
 from .models import ComingSoonSubscription

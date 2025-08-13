@@ -185,21 +185,6 @@ class PropertyAnalysis(TimeStampedModel):
     def __str__(self):
         return f"Investment Analysis: {self.property_title}"
     
-
-
-class ScrapingProgress(models.Model):
-    last_scraped_page = models.IntegerField(default=0)
-    total_properties_found = models.IntegerField(default=0)
-    bootstrap_complete = models.BooleanField(default=False)
-    last_update = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name_plural = "Scraping Progress"
-    
-    @classmethod
-    def get_current(cls):
-        obj, created = cls.objects.get_or_create(id=1)
-        return obj
     
 
 class ComingSoonSubscription(models.Model):

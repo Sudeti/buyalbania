@@ -486,40 +486,6 @@ class Century21AlbaniaScraper:
         
         return ''
 
-    # In apps/property_ai/scrapers.py - ADD this method:
-
-    def get_specific_page_listings(self, page_number):
-        """Get property URLs from a specific page number"""
-        urls_to_try = [
-            f"{self.base_url}/properties?page={page_number}",
-            f"{self.base_url}/en/properties?page={page_number}",
-        ]
-        
-        property_urls = []
-        
-        for url in urls_to_try:
-            try:
-                logger.info(f"🔍 Fetching page {page_number}: {url}")
-                response = self.session.get(url, timeout=30)
-                if response.status_code == 200:
-                    page_urls = self._extract_urls_from_page(response.content, url)
-                    if page_urls:
-                        property_urls.extend(page_urls)
-                        logger.info(f"📋 Found {len(page_urls)} properties on page {page_number}")
-                        break
-                    else:
-                        logger.warning(f"⚠️ No properties found on page {page_number}")
-                else:
-                    logger.warning(f"⚠️ HTTP {response.status_code} for page {page_number}")
-                    
-            except Exception as e:
-                logger.error(f"❌ Error getting page {page_number} from {url}: {e}")
-                continue
-        
-        # Add small delay to be respectful
-        time.sleep(random.uniform(1, 2))
-        
-        return list(set(property_urls))  # Remove duplicates
 
 # Backward compatibility
 Century21Scraper = Century21AlbaniaScraper
