@@ -138,9 +138,11 @@ class Century21AlbaniaScraper:
         name_patterns = [
             # Albanian agent name patterns (simple and direct)
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@c21cpm\.al',  # Name before email
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@c21roy\.al',  # Name before c21roy email - NEW
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?\+355',        # Name before phone
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agent',        # Name before Agent
-            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Licensë',      # Name before License
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?LicensÃ«',      # Name before License
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agjent',       # Name before Agjent - NEW
             
             # Even simpler patterns
             r'([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\s*\n',      # Two capitalized words followed by newline
@@ -170,6 +172,7 @@ class Century21AlbaniaScraper:
                     return cleaned_name
         
         return None
+        
 
     def _extract_agent_email(self, soup, text):
         """Extract agent email - Simple direct approach like phone extraction"""
