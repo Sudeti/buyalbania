@@ -252,10 +252,10 @@ def daily_property_scrape():
 
 @shared_task
 def midnight_bulk_scrape_task():
-    """Safe midnight bulk scraping - 30-50 pages"""
+    """Safe midnight bulk scraping with proper resumption"""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
-    import os
+    from apps.property_ai.management.commands.bulk_scrape_initial import Command
     
     try:
         User = get_user_model()
@@ -265,38 +265,68 @@ def midnight_bulk_scrape_task():
             logger.error("No superuser found for midnight scraping")
             return "Error: No superuser found"
         
-        # Calculate pages to scrape (progressive approach)
+        # FIXED: Use the proper resume calculation
+        command_instance = Command()
+        start_page = command_instance.calculate_resume_page()
+        
+        # Determine pages to scrape based on current database size
         current_count = PropertyAnalysis.objects.count()
         
-        if current_count < 200:  # First few runs
+        if current_count < 200:  # Initial building phase
+            pages_to_scrape = 25
+        elif current_count < 500:  # Growth phase
             pages_to_scrape = 20
-        elif current_count < 500:  # Building up
-            pages_to_scrape = 30
-        elif current_count < 700:  # Getting theres
-            pages_to_scrape = 40
-        else:  # Final push or maintenance
-            pages_to_scrape = 50  # Just check for new ones
+        elif current_count < 1000:  # Expansion phase
+            pages_to_scrape = 15
+        else:  # Maintenance phase - just check for new properties
+            pages_to_scrape = 10
         
-        # Calculate start page (avoid re-scraping same pages)
-        estimated_start_page = max(1, (current_count // 12) + 1)
+        logger.info(f"🌙 Midnight scrape starting: {pages_to_scrape} pages from page {start_page}")
+        logger.info(f"📊 Current database: {current_count} properties")
         
-        logger.info(f"Midnight scrape: {pages_to_scrape} pages starting from {estimated_start_page}")
+        # Track start time and count for reporting
+        start_time = timezone.now()
+        initial_count = current_count
         
-        # Run the bulletproof scraper
+        # Run the bulletproof scraper with proper resumption
         call_command(
             'bulk_scrape_initial',
             f'--user-id={system_user.id}',
             f'--max-pages={pages_to_scrape}',
-            f'--start-page={estimated_start_page}',
+            f'--start-page={start_page}',
             '--delay=2.5'  # Faster at night when less traffic
         )
         
-        new_count = PropertyAnalysis.objects.count()
-        scraped_this_run = new_count - current_count
+        # Calculate results
+        end_time = timezone.now()
+        final_count = PropertyAnalysis.objects.count()
+        scraped_this_run = final_count - initial_count
+        duration = (end_time - start_time).total_seconds() / 60  # minutes
         
-        logger.info(f"Midnight scrape completed: {scraped_this_run} new properties")
-        return f"Scraped {scraped_this_run} new properties (total: {new_count})"
+        # Log comprehensive results
+        logger.info(f"🎉 Midnight scrape completed successfully!")
+        logger.info(f"⏱️ Duration: {duration:.1f} minutes")
+        logger.info(f"📈 New properties: {scraped_this_run}")
+        logger.info(f"📊 Total database: {final_count} properties")
+        logger.info(f"🔄 Next run will start from page ~{start_page + pages_to_scrape}")
+        
+        return {
+            'status': 'success',
+            'new_properties': scraped_this_run,
+            'total_properties': final_count,
+            'duration_minutes': round(duration, 1),
+            'pages_scraped': pages_to_scrape,
+            'next_start_page': start_page + pages_to_scrape
+        }
         
     except Exception as e:
-        logger.error(f"Midnight scrape failed: {e}")
+        logger.error(f"❌ Midnight scrape failed: {e}")
+        
+        # Try to provide helpful error context
+        try:
+            current_count = PropertyAnalysis.objects.count()
+            logger.error(f"📊 Database state at failure: {current_count} properties")
+        except:
+            pass
+            
         return f"Midnight scrape failed: {e}"

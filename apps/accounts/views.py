@@ -41,22 +41,6 @@ def register(request):
                 email_verification_sent_at=timezone.now()
             )
             
-            # Log privacy policy consent with the current active version
-            from .models import PrivacyPolicyConsent, PrivacyPolicyVersion
-            current_policy = PrivacyPolicyVersion.objects.filter(is_active=True).first()
-            
-            if not current_policy:
-                # Fallback if no policy is marked active
-                logger.error("No active privacy policy found during user registration")
-                current_policy = PrivacyPolicyVersion.objects.order_by('-effective_date').first()
-            
-            PrivacyPolicyConsent.objects.create(
-                user=user,
-                policy_version=current_policy,
-                ip_address=request.META.get('REMOTE_ADDR', ''),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')
-            )
-            
             # Send verification email
             current_site = get_current_site(request)
             verification_url = request.build_absolute_uri(

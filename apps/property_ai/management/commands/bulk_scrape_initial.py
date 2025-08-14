@@ -7,6 +7,7 @@ from django.db import transaction
 import time
 import random
 import logging
+from django.utils import timezone 
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -160,6 +161,48 @@ class Command(BaseCommand):
         
         # Final stats
         self.show_final_stats()
+
+    def calculate_resume_page(self):
+        """Calculate where to resume scraping based on existing data - SMART MARGIN"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        try:
+            total_properties = PropertyAnalysis.objects.count()
+            
+            if total_properties == 0:
+                return 1
+            
+            # Check recent scraping activity (last 48 hours)
+            recent_threshold = timezone.now() - timedelta(hours=48)
+            recent_count = PropertyAnalysis.objects.filter(
+                created_at__gte=recent_threshold,
+                scraped_by__isnull=False
+            ).count()
+            
+            # Estimate current page (assuming ~12 properties per page)
+            estimated_current_page = (total_properties // 12) + 1
+            
+            if recent_count > 0:
+                # Recent activity - minimal safety margin
+                safety_margin = 2  # Just 2 pages back
+            else:
+                # No recent activity - slightly more conservative  
+                safety_margin = 3  # 3 pages back
+            
+            safe_start_page = max(1, estimated_current_page - safety_margin)
+            
+            self.stdout.write(f"📊 Resume calculation:")
+            self.stdout.write(f"   • Total properties: {total_properties}")
+            self.stdout.write(f"   • Estimated current page: {estimated_current_page}")
+            self.stdout.write(f"   • Safety margin: {safety_margin} pages")
+            self.stdout.write(f"   • Resume from page: {safe_start_page}")
+            
+            return safe_start_page
+            
+        except Exception as e:
+            self.stdout.write(f"⚠️ Error calculating resume page: {e}")
+            return 1
     
     def safe_get_urls(self, scraper, start_page, max_pages, delay):
         """Safely collect URLs with built-in protection"""
