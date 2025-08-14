@@ -102,7 +102,7 @@ class Century21AlbaniaScraper:
             extracted_data = {
                 'url': url,
                 'title': self._extract_title(soup),
-                'price': self._extract_price(text),
+                'price': self._extract_price(text, soup),
                 'location': self._extract_location(text),
                 'neighborhood': self._extract_neighborhood(text),
                 'property_type': self._extract_type(text),
@@ -321,12 +321,21 @@ class Century21AlbaniaScraper:
         
         return "Property"
     
-    def _extract_price(self, text):
-        """Enhanced price extraction - ALBANIAN FOCUSED"""
-        # Albanian-specific price patterns
+    def _extract_price(self, text, soup=None):
+        """Enhanced price extraction - ALBANIAN FOCUSED WITH SMART FILTERING"""
+        
+        # Method 1: Try to get main property price from structured content first
+        if soup:
+            main_price = self._extract_main_property_price(soup)
+            if main_price:
+                logger.info(f"✅ Main property price found: €{main_price:,}")
+                return Decimal(str(main_price))
+        
+        # Method 2: Filter out related properties section from text
+        clean_text = self._remove_related_properties_section(text)
+        
+        # Albanian-specific price patterns (same as before)
         price_patterns = [
-            r'çmimi[:\s]*€?\s*(\d{1,3}(?:[,.\s]?\d{3})*)',  # Albanian "price"
-            r'vlera[:\s]*€?\s*(\d{1,3}(?:[,.\s]?\d{3})*)',   # Albanian "value"
             r'(\d{1,3}(?:[,.\s]?\d{3})*)\s*€',  # 220,000 €
             r'€\s*(\d{1,3}(?:[,.\s]?\d{3})*)',  # € 220,000
             r'(\d{1,3}(?:[,.\s]?\d{3})*)\s*EUR',
@@ -336,7 +345,7 @@ class Century21AlbaniaScraper:
         
         prices_found = []
         for pattern in price_patterns:
-            matches = re.findall(pattern, text, re.IGNORECASE)
+            matches = re.findall(pattern, clean_text, re.IGNORECASE)
             for match in matches:
                 try:
                     # Clean and convert
@@ -348,7 +357,77 @@ class Century21AlbaniaScraper:
                 except:
                     continue
         
-        return Decimal(str(max(prices_found))) if prices_found else Decimal('0')
+        if prices_found:
+            main_price = max(prices_found)  # In clean text, max should be correct
+            logger.info(f"✅ Price from filtered text: €{main_price:,}")
+            return Decimal(str(main_price))
+        
+        logger.warning("❌ No valid price found")
+        return Decimal('0')
+
+    def _extract_main_property_price(self, soup):
+        """Extract price from main property HTML structure - NEW METHOD"""
+        
+        # Look for price in main content areas (avoid related listings)
+        main_selectors = [
+            'h1 + *',  # Element right after main title
+            '.property-price',
+            '.main-price', 
+            '.price-value',
+            '[data-price]'
+        ]
+        
+        for selector in main_selectors:
+            try:
+                elements = soup.select(selector)
+                for element in elements[:3]:  # Only check first 3 matches
+                    text = element.get_text(strip=True)
+                    if '€' in text:
+                        price = self._parse_single_price_value(text)
+                        if price and 5000 <= price <= 15000000:
+                            return price
+            except:
+                continue
+        
+        return None
+
+    def _remove_related_properties_section(self, text):
+        """Remove related/similar properties section - NEW METHOD"""
+        
+        # Find where related properties section starts
+        split_indicators = [
+            'ju gjithashtu mund të shikoni',  # "You may also see"
+            'you may also like',
+            'similar properties',
+            'related properties', 
+            'recommended properties',
+            'shikoni edhe',
+            'properties in the same area'
+        ]
+        
+        text_lower = text.lower()
+        earliest_split = len(text)
+        
+        for indicator in split_indicators:
+            pos = text_lower.find(indicator)
+            if pos != -1 and pos < earliest_split:
+                earliest_split = pos
+        
+        # Return only main property content (before related section)
+        return text[:earliest_split]
+
+    def _parse_single_price_value(self, text):
+        """Parse price from a single text element - NEW METHOD"""
+        
+        # Extract just the numeric part with €
+        price_match = re.search(r'(\d{1,3}(?:[,.\s]?\d{3})*)', text)
+        if price_match:
+            try:
+                price_str = re.sub(r'[,.\s]', '', price_match.group(1))
+                return int(price_str)
+            except:
+                pass
+        return None
     
     def _extract_location(self, text):
         """Extract location - MORE FLEXIBLE"""
