@@ -9,6 +9,9 @@ from django.utils import timezone
 from .models import PropertyAnalysis
 from .ai_engine import PropertyAI
 from .report_generator import PropertyReportPDF
+from .analytics import PropertyAnalytics
+from django.contrib.auth import get_user_model
+from django.db.models import Q, Avg
 import random
 import time
 
@@ -330,3 +333,142 @@ def midnight_bulk_scrape_task():
             pass
             
         return f"Midnight scrape failed: {e}"
+
+@shared_task
+def send_property_alerts_task():
+    """Send email alerts to users about new properties that are good deals"""
+    try:
+        User = get_user_model()
+        analytics = PropertyAnalytics()
+        
+        # Get properties added in the last 24 hours
+        yesterday = timezone.now() - timezone.timedelta(days=1)
+        new_properties = PropertyAnalysis.objects.filter(
+            created_at__gte=yesterday,
+            status='completed',
+            scraped_by__isnull=False,  # Only system-scraped properties
+            user__isnull=True  # Not user-requested analyses
+        ).order_by('-created_at')
+        
+        if not new_properties.exists():
+            logger.info("No new properties found for alerts")
+            return "No new properties found"
+        
+        # Get users who want property alerts
+        users_with_alerts = User.objects.filter(
+            profile__email_property_alerts=True,
+            profile__is_email_verified=True,
+            is_active=True
+        ).select_related('profile')
+        
+        if not users_with_alerts.exists():
+            logger.info("No users with property alerts enabled")
+            return "No users with alerts enabled"
+        
+        # Group properties by location for efficient processing
+        properties_by_location = {}
+        for prop in new_properties:
+            location = prop.property_location.split(',')[0].strip()
+            if location not in properties_by_location:
+                properties_by_location[location] = []
+            properties_by_location[location].append(prop)
+        
+        # Get market stats for each location
+        location_market_stats = {}
+        for location in properties_by_location.keys():
+            market_stats = analytics.get_location_market_stats(location)
+            if market_stats and market_stats.get('avg_price'):
+                location_market_stats[location] = market_stats
+        
+        # Find properties that are at least 10% below market average
+        good_deals = []
+        for location, properties in properties_by_location.items():
+            if location not in location_market_stats:
+                continue
+                
+            avg_price = location_market_stats[location]['avg_price']
+            for prop in properties:
+                if prop.asking_price and avg_price:
+                    price_discount = ((avg_price - prop.asking_price) / avg_price) * 100
+                    if price_discount >= 10:  # At least 10% below average
+                        good_deals.append({
+                            'property': prop,
+                            'location': location,
+                            'price_discount': price_discount,
+                            'market_stats': location_market_stats[location]
+                        })
+        
+        if not good_deals:
+            logger.info("No properties found that are 10%+ below market average")
+            return "No good deals found"
+        
+        # Send alerts to users
+        alerts_sent = 0
+        for user in users_with_alerts:
+            try:
+                # Filter deals based on user preferences
+                user_deals = []
+                for deal in good_deals:
+                    if user.profile.should_receive_property_alert(deal['property']):
+                        user_deals.append(deal)
+                
+                if user_deals:
+                    # Send email alert
+                    send_property_alert_email.delay(user.id, [deal['property'].id for deal in user_deals])
+                    alerts_sent += 1
+                    
+            except Exception as e:
+                logger.error(f"Error processing alerts for user {user.id}: {e}")
+                continue
+        
+        logger.info(f"Property alerts task completed: {alerts_sent} users notified about {len(good_deals)} good deals")
+        return f"Sent {alerts_sent} property alerts"
+        
+    except Exception as e:
+        logger.error(f"Error in property alerts task: {e}")
+        return f"Property alerts task failed: {e}"
+
+@shared_task
+def send_property_alert_email(user_id, property_ids):
+    """Send property alert email to a specific user"""
+    try:
+        User = get_user_model()
+        user = User.objects.get(id=user_id)
+        properties = PropertyAnalysis.objects.filter(id__in=property_ids)
+        
+        if not properties.exists():
+            return f"No properties found for user {user_id}"
+        
+        # Prepare email context
+        context = {
+            'user': user,
+            'properties': properties,
+            'property_count': properties.count(),
+            'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'https://propertyai.com'
+        }
+        
+        # Render email templates
+        subject = f"🏠 {properties.count()} New Property Deal{'s' if properties.count() > 1 else ''} Found!"
+        
+        html_message = render_to_string('property_ai/emails/property_alert.html', context)
+        text_message = render_to_string('property_ai/emails/property_alert.txt', context)
+        
+        # Send email
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email]
+        )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
+        
+        logger.info(f"Sent property alert email to {user.email} for {properties.count()} properties")
+        return f"Alert sent to {user.email}"
+        
+    except User.DoesNotExist:
+        logger.error(f"User {user_id} not found for property alert")
+        return f"User {user_id} not found"
+    except Exception as e:
+        logger.error(f"Error sending property alert email to user {user_id}: {e}")
+        return f"Error sending alert: {e}"

@@ -1,0 +1,38 @@
+New Property Deals Found!
+
+Hi {{ user.first_name|default:user.username }},
+
+We found {{ property_count }} new property{{ property_count|pluralize }} that are at least 10% below market average!
+
+Our AI has identified {{ property_count }} new property{{ property_count|pluralize }} that represent excellent investment opportunities. These properties are priced significantly below the market average for their location.
+
+{% for property in properties %}
+==========================================
+{{ property.property_title }}
+
+Price: €{{ property.asking_price|floatformat:0 }}
+Location: {{ property.property_location }}
+Type: {{ property.property_type|title }}
+Size: {{ property.square_meters|default:"N/A" }} m²
+Bedrooms: {{ property.bedrooms|default:"N/A" }}
+{% if property.investment_score %}Investment Score: {{ property.investment_score }}/100{% endif %}
+{% if property.recommendation %}Recommendation: {{ property.recommendation|title }}{% endif %}
+
+View Full Analysis: {{ site_url }}{% url 'property_ai:analysis_detail' analysis_id=property.id %}
+
+{% endfor %}
+
+==========================================
+
+View All My Analyses: {{ site_url }}{% url 'property_ai:my_analyses' }}
+
+These alerts are based on your preferences and market analysis.
+
+Happy investing!
+
+The PropertyAI Team
+
+---
+You're receiving this because you have property alerts enabled.
+Manage your email preferences: {{ site_url }}{% url 'accounts:user_profile' %}
+Contact Support: support@propertyai.com

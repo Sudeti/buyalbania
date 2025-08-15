@@ -215,8 +215,58 @@
                 </div>
             </div>
 
-            <!-- Account Actions -->
+            <!-- Email Preferences -->
             <div class="card fade-in mb-4" style="animation-delay: 0.2s;">
+                <div class="card-body">
+                    <h3 class="h5 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-envelope"></i>
+                        Email Preferences
+                    </h3>
+                    
+                    <form method="post" action="{% url 'accounts:update_email_preferences' %}">
+                        {% csrf_token %}
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_property_alerts" name="email_property_alerts" 
+                                   {% if user.profile.email_property_alerts %}checked{% endif %}>
+                            <label class="form-check-label" for="email_property_alerts">
+                                <strong>Property Deal Alerts</strong>
+                                <div class="text-muted small">Get notified about new properties that are 10%+ below market average</div>
+                            </label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="preferred_locations" class="form-label small fw-semibold">Preferred Locations</label>
+                            <input type="text" class="form-control form-control-sm" id="preferred_locations" name="preferred_locations"
+                                   value="{{ user.profile.preferred_locations|join:', ' }}" 
+                                   placeholder="e.g., Tirana, Durrës, Vlorë">
+                            <div class="form-text small">Leave empty for all locations</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="min_investment_score" class="form-label small fw-semibold">Minimum Investment Score</label>
+                            <input type="number" class="form-control form-control-sm" id="min_investment_score" name="min_investment_score"
+                                   value="{{ user.profile.min_investment_score|default:70 }}" min="0" max="100">
+                            <div class="form-text small">Only properties with this score or higher</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_price" class="form-label small fw-semibold">Maximum Price (€)</label>
+                            <input type="number" class="form-control form-control-sm" id="max_price" name="max_price"
+                                   value="{{ user.profile.max_price|default:'' }}" placeholder="e.g., 150000">
+                            <div class="form-text small">Leave empty for no price limit</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-check-lg me-2"></i>
+                            Save Preferences
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
                 <div class="card-body">
                     <h3 class="h5 mb-4 d-flex align-items-center gap-2">
                         <i class="bi bi-gear"></i>

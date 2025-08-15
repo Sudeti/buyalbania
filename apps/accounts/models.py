@@ -17,6 +17,28 @@ class UserProfile(models.Model):
     monthly_analyses_used = models.IntegerField(default=0)
     monthly_quota_reset_date = models.DateField(null=True, blank=True)
     
+    # NEW: Email notification preferences
+    email_property_alerts = models.BooleanField(
+        default=True, 
+        help_text="Receive emails about new properties that are good deals"
+    )
+    preferred_locations = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="List of preferred locations for property alerts (e.g., ['Tirana', 'Durrës'])"
+    )
+    min_investment_score = models.IntegerField(
+        default=70,
+        help_text="Minimum investment score for properties to include in alerts"
+    )
+    max_price = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Maximum price for properties to include in alerts"
+    )
+    
     def reset_monthly_quota_if_needed(self):
         """Reset quota on first of each month"""
         from django.utils import timezone
@@ -57,6 +79,30 @@ class UserProfile(models.Model):
             return max(0, 10 - self.monthly_analyses_used)
         else:
             return float('inf')  # unlimited
+    
+    def should_receive_property_alert(self, property_analysis):
+        """Check if user should receive alert for this property"""
+        if not self.email_property_alerts:
+            return False
+            
+        # Check if property matches user's preferences
+        if self.preferred_locations:
+            location_match = any(
+                location.lower() in property_analysis.property_location.lower() 
+                for location in self.preferred_locations
+            )
+            if not location_match:
+                return False
+        
+        # Check investment score
+        if property_analysis.investment_score and property_analysis.investment_score < self.min_investment_score:
+            return False
+            
+        # Check max price
+        if self.max_price and property_analysis.asking_price > self.max_price:
+            return False
+            
+        return True
         
 class PageView(models.Model):
     """Track page views for analytics"""

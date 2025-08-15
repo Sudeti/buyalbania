@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm, LoginForm
 import secrets
@@ -85,6 +85,55 @@ def user_profile(request):
         "user": request.user,
         "analyses": analyses,
     })
+
+@login_required
+@require_POST
+def update_email_preferences(request):
+    """Update user's email preferences"""
+    try:
+        profile = request.user.profile
+        
+        # Update email alerts preference
+        profile.email_property_alerts = request.POST.get('email_property_alerts') == 'on'
+        
+        # Update preferred locations
+        locations_text = request.POST.get('preferred_locations', '').strip()
+        if locations_text:
+            # Split by comma and clean up
+            locations = [loc.strip() for loc in locations_text.split(',') if loc.strip()]
+            profile.preferred_locations = locations
+        else:
+            profile.preferred_locations = []
+        
+        # Update minimum investment score
+        min_score = request.POST.get('min_investment_score')
+        if min_score:
+            try:
+                profile.min_investment_score = int(min_score)
+            except ValueError:
+                profile.min_investment_score = 70
+        else:
+            profile.min_investment_score = 70
+        
+        # Update maximum price
+        max_price = request.POST.get('max_price')
+        if max_price:
+            try:
+                profile.max_price = float(max_price)
+            except ValueError:
+                profile.max_price = None
+        else:
+            profile.max_price = None
+        
+        profile.save()
+        
+        messages.success(request, 'Email preferences updated successfully!')
+        
+    except Exception as e:
+        logger.error(f"Error updating email preferences for user {request.user.id}: {e}")
+        messages.error(request, 'Error updating preferences. Please try again.')
+    
+    return redirect('accounts:user_profile')
 
 def verify_email(request, token):
     try:

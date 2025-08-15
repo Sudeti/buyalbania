@@ -158,7 +158,7 @@ ANYMAIL = {
     "MAILGUN_SENDER_DOMAIN": os.getenv("MAILGUN_DOMAIN"),
     "MAILGUN_API_URL": "https://api.eu.mailgun.net/v3",
 }
-DEFAULT_FROM_EMAIL = 'noreply@genvacation.com'
+DEFAULT_FROM_EMAIL = 'noreply@buyalbania.com'
 
 
 
@@ -189,7 +189,13 @@ CELERY_BEAT_SCHEDULE = {
     # Simple daily check for new properties
     'daily-new-property-check': {
         'task': 'apps.property_ai.tasks.daily_property_scrape',
-        'schedule': crontab(hour=6, minute=0),  # 5 AM daily
+        'schedule': crontab(hour=6, minute=0),  # 6 AM daily
+    },
+    
+    # NEW: Property alerts - send emails about good deals
+    'property-alerts-daily': {
+        'task': 'apps.property_ai.tasks.send_property_alerts_task',
+        'schedule': crontab(hour=8, minute=0),  # 8 AM daily - after scraping is done
     },
     
     # Weekly URL health check
