@@ -149,18 +149,14 @@
         </div>
     </div>
     {% endif %}
-    <!-- ADD after line 80 (after the stats overview): -->
 {% if user_tier %}
 <div class="alert alert-info">
     <div class="row align-items-center">
         <div class="col-md-8">
-            <strong>Your {{ user_tier|title }} Plan:</strong>
-            {% if user_tier == 'free' %}
-                Showing {{ total_available }} of your own analyses. {{ remaining_analyses }} analysis remaining this month.
-            {% elif user_tier == 'basic' %}
-                Showing {{ total_available }} good properties (60+ score). {{ remaining_analyses }} analyses remaining this month.
-            {% else %}
-                Premium access: Showing all {{ total_available }} properties. Unlimited analyses.
+            <strong>{{ user_tier|title }} Plan:</strong>
+            Showing your {{ stats.total }} personal analyses.
+            {% if user_tier != 'premium' %}
+                {{ remaining_analyses }} analyses remaining this month.
             {% endif %}
         </div>
         <div class="col-md-4 text-end">

@@ -273,13 +273,13 @@ def midnight_bulk_scrape_task():
         current_count = PropertyAnalysis.objects.count()
         
         if current_count < 200:  # Initial building phase
-            pages_to_scrape = 25
+            pages_to_scrape = 35
         elif current_count < 500:  # Growth phase
-            pages_to_scrape = 20
+            pages_to_scrape = 30
         elif current_count < 1000:  # Expansion phase
-            pages_to_scrape = 15
+            pages_to_scrape = 25
         else:  # Maintenance phase - just check for new properties
-            pages_to_scrape = 10
+            pages_to_scrape = 20
         
         logger.info(f"🌙 Midnight scrape starting: {pages_to_scrape} pages from page {start_page}")
         logger.info(f"📊 Current database: {current_count} properties")

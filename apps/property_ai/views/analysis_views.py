@@ -171,29 +171,17 @@ def analyze_property(request):
 
 @login_required
 def my_analyses(request):
-    """Show analyses based on user tier"""
+    """Show only user's own analyses for all tiers"""
     if not hasattr(request.user, 'profile'):
         messages.error(request, 'Please complete your profile.')
         return redirect('accounts:user_profile')
     
     profile = request.user.profile
     
-    if profile.subscription_tier == 'free':
-        analyses = PropertyAnalysis.objects.filter(user=request.user).order_by('-created_at')
-        available_count = analyses.count()
-    elif profile.subscription_tier == 'basic':
-        all_good_analyses = PropertyAnalysis.objects.filter(
-            status='completed',
-            investment_score__gte=60
-        )
-        own_analyses = PropertyAnalysis.objects.filter(user=request.user)
-        analyses = (all_good_analyses | own_analyses).distinct().order_by('-created_at')
-        available_count = analyses.count()
-    else:  # premium
-        analyses = PropertyAnalysis.objects.filter(status='completed').order_by('-created_at')
-        available_count = analyses.count()
+    # ALL TIERS: Show only user's own analyses
+    analyses = PropertyAnalysis.objects.filter(user=request.user).order_by('-created_at')
     
-    # ADD: Calculate stats
+    # Calculate stats
     completed_analyses = analyses.filter(status='completed')
     stats = {
         'total': analyses.count(),
@@ -203,12 +191,10 @@ def my_analyses(request):
     }
     
     context = {
-        'analyses': analyses[:50],  # Paginate
+        'analyses': analyses[:50],
         'user_tier': profile.subscription_tier,
         'remaining_analyses': profile.remaining_analyses,
-        'total_available': available_count,
-        'quota_used': profile.monthly_analyses_used,
-        'stats': stats,  # ADD this
+        'stats': stats,
     }
     return render(request, 'property_ai/my_analyses.html', context)
 

@@ -197,88 +197,51 @@
     </defs>
     <rect width="100%" height="100%" fill="url(#p)"></rect>
   </svg>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{% url 'property_ai:home' %}">
+      AI Property
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-  <!-- NAV -->
-  <nav id="mainNav" class="navbar navbar-expand-lg navbar-light fixed-top">
-    <div class="container">
-      <a class="navbar-brand" href="{% url 'property_ai:home' %}">
-        <img src="{% static 'property_ai/logo.png' %}" alt="AI Property logo" class="navbar-logo" />
-        AI Property
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse" aria-controls="navCollapse" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="navCollapse">
-        <ul class="navbar-nav ms-auto align-items-lg-center">
-          <li class="nav-item"><a class="nav-link" href="{% url 'property_ai:analyze_property' %}">Analyze</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'property_ai:market_overview' %}">Market</a></li>
-          {% if user.is_authenticated %}
-            <li class="nav-item d-lg-none"><a class="nav-link" href="{% url 'property_ai:my_analyses' %}">My Analyses</a></li>
-          {% endif %}
-          {% if user.is_authenticated %}
-            {% if user.profile %}
-              <li class="nav-item d-none d-lg-inline-block"><span class="nav-link small">{{ user.profile.subscription_tier|title }}{% if user.profile.subscription_tier != 'premium' %} • {{ user.profile.remaining_analyses }} left{% endif %}</span></li>
-            {% endif %}
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa-solid fa-user"></i> {{ user.username }}
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">Profile</a></li>
-                <li><a class="dropdown-item" href="{% url 'property_ai:my_analyses' %}">My Analyses</a></li>
-                {% if user.profile and user.profile.subscription_tier != 'premium' %}
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item text-success" href="#upgrade"><i class="fa-solid fa-arrow-up me-2"></i>Upgrade Plan</a></li>
-                {% endif %}
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
-              </ul>
-            </li>
-          {% else %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Login</a></li>
-            <li class="nav-item ms-2"><a class="btn btn-sm btn-primary-cta" href="{% url 'accounts:register' %}">Sign Up Free</a></li>
-          {% endif %}
-        </ul>
-      </div>
+    <div class="collapse navbar-collapse" id="navCollapse">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'property_ai:analyze_property' %}">Analyze</a>
+        </li>
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'property_ai:my_analyses' %}">My Analyses</a>
+          </li>
+      
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              {{ user.username }}
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">Profile</a></li>
+              {% if user.profile.subscription_tier != 'premium' %}
+                <li><a class="dropdown-item text-success" href="#upgrade">Upgrade Plan</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary btn-sm ms-2" href="{% url 'accounts:register' %}">Sign Up Free</a>
+          </li>
+        {% endif %}
+      </ul>
     </div>
-  </nav>
-
-  <!-- HERO -->
-  <header class="hero" role="banner" aria-label="Hero section">
-    <div class="card-hero" data-aos="fade-up" data-aos-duration="900" data-aos-delay="80">
-      <div>
-        <h1 class="hero-title">Intelligent real estate investment decisions — backed by data.</h1>
-        <p class="hero-sub">AI-powered scoring, localized Albanian market insights, rental & yield forecasts, and professional PDF reports built to inform confident investments.</p>
-
-        <div class="cta-row" role="group" aria-label="Primary call to actions">
-          <a class="btn btn-primary-cta" href="{% url 'property_ai:analyze_property' %}">Start free analysis</a>
-          <a class="btn btn-ghost" href="{% url 'property_ai:market_overview' %}">Explore market overview</a>
-        </div>
-
-        <div class="trust" aria-hidden="false" role="list">
-          <div class="badge" role="listitem"><i class="fa-solid fa-shield-check me-2"></i>GDPR friendly</div>
-          <div class="badge" role="listitem"><i class="fa-solid fa-file-lines me-2"></i>Downloadable reports</div>
-          <div class="badge" role="listitem"><i class="fa-solid fa-globe me-2"></i>Albanian market data</div>
-        </div>
-      </div>
-
-      <aside class="hero-stats" aria-hidden="false">
-        <div class="stat-pill" data-aos="fade-left" data-aos-delay="180">
-          <div class="stat-value">+2,400</div>
-          <div class="stat-desc" style="color:var(--muted);">Analyses performed</div>
-        </div>
-        <div class="stat-pill" data-aos="fade-left" data-aos-delay="260">
-          <div class="stat-value">4.8/5</div>
-          <div class="stat-desc" style="color:var(--muted);">Average client confidence</div>
-        </div>
-        <div class="stat-pill" data-aos="fade-left" data-aos-delay="340">
-          <div class="stat-value">Instant</div>
-          <div class="stat-desc" style="color:var(--muted);">Reports & scoring</div>
-        </div>
-      </aside>
-    </div>
-  </header>
+  </div>
+</nav>
+<header class="simple-header" style="padding: 6rem 0 2rem 0; text-align: center;">
 
   <!-- NOTIFICATIONS -->
   <div class="container" style="max-width:var(--max-width); margin-top:1rem; padding:0 1rem;">

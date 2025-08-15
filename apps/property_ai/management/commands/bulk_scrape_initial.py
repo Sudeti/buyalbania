@@ -41,10 +41,7 @@ class Command(BaseCommand):
         # Initialize scraper with rotating headers
         scraper = Century21AlbaniaScraper()
         
-        # Circuit breaker variables
-        consecutive_failures = 0
-        max_failures = 5
-        
+       
         # Collect URLs first (with safety checks)
         self.stdout.write(f"\n📋 Phase 1: Safely collecting URLs...")
         
@@ -125,13 +122,9 @@ class Command(BaseCommand):
                     
                 else:
                     failed += 1
-                    consecutive_failures += 1
                     
-                # Circuit breaker
-                if consecutive_failures >= max_failures:
-                    self.stdout.write(f"🛑 CIRCUIT BREAKER: {max_failures} consecutive failures - stopping for safety")
-                    break
-                
+                    
+               
                 # Dynamic delay (longer delays as we progress)
                 base_delay = options['delay']
                 jitter = random.uniform(0.5, 2.0)
@@ -142,12 +135,9 @@ class Command(BaseCommand):
                 
             except Exception as e:
                 failed += 1
-                consecutive_failures += 1
+                
                 self.stdout.write(f"  ❌ {i}/{len(new_urls)}: Error - {str(e)[:50]}")
                 
-                if consecutive_failures >= max_failures:
-                    self.stdout.write(f"🛑 Too many failures - stopping for safety")
-                    break
                 
                 time.sleep(options['delay'] * 2)  # Longer delay after errors
         

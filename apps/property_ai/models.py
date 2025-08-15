@@ -94,9 +94,9 @@ class PropertyAnalysis(TimeStampedModel):
                                  help_text="Agent phone number")
     # ADD: Tier access control
     def is_available_to_user(self, user):
-        """Strict tier-based access control"""
+        """Updated tier-based access control"""
         if not user or not user.is_authenticated:
-            return False  # Anonymous users see NOTHING
+            return False
             
         user_profile = getattr(user, 'profile', None)
         if not user_profile:
@@ -104,13 +104,15 @@ class PropertyAnalysis(TimeStampedModel):
             
         tier = user_profile.subscription_tier
         
-        if tier == 'premium':
-            return True  # Premium: See everything
-        elif tier == 'basic':
-            return self.status == 'completed' and (self.investment_score or 0) >= 60
-        elif tier == 'free':
-            # Free users can ONLY see their own analysis (if they have monthly quota)
+        if tier == 'free':
+            # Free: Only their own analyses
             return self.user == user
+        elif tier == 'basic':  # This is your "Premium" tier
+            # Basic: Only their own analyses + alerts
+            return self.user == user
+        elif tier == 'premium':  # This is your "Ultimate" tier
+            # Premium: Their own analyses + excellent properties (80+)
+            return (self.user == user) or (self.status == 'completed' and (self.investment_score or 0) >= 80)
         else:
             return False
         
