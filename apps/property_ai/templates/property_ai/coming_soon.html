@@ -129,24 +129,7 @@
                 {% endfor %}
             {% endif %}
             
-            <div class="features">
-                <div class="feature-item">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Investment scoring & risk assessment</span>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-house-chimney"></i>
-                    <span>Market comparison & neighborhood analysis</span>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-file-pdf"></i>
-                    <span>Professional PDF reports</span>
-                </div>
-                <div class="feature-item">
-                    <i class="fas fa-calculator"></i>
-                    <span>Rental yield & ROI calculations</span>
-                </div>
-            </div>
+            
             
             <div class="notify-form">
                 <p style="color: var(--muted); margin-bottom: 1rem;">Get notified when we launch:</p>
@@ -156,12 +139,7 @@
                     <button type="submit" class="btn btn-notify">Notify Me</button>
                 </form>
                 
-                {% if subscriber_count > 0 %}
-                    <div class="subscriber-count">
-                        <i class="fas fa-users me-1"></i>
-                        {{ subscriber_count }} {{ subscriber_count|pluralize:"person,people" }} already subscribed
-                    </div>
-                {% endif %}
+               
             </div>
             
            
