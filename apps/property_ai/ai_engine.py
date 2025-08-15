@@ -24,53 +24,46 @@ class PropertyAI:
    
     # Updated ai_engine.py - simplified to match your scraper
     # ai_engine.py - Update the analyze_property method
-    def analyze_property(self, property_data, comparable_properties=None):
-        """Investment-focused property analysis using current 2025 market data + real market averages"""
+    def analyze_property(self, property_data, comparable_properties=None, property_analysis=None):
+        """Enhanced investment analysis with comprehensive market analytics"""
         try:
-            from .market_analytics import MarketAnalytics
+            from .analytics import PropertyAnalytics
             
             # Calculate key metrics from simplified data
             price = property_data.get('price', 0)
             area = property_data.get('square_meters', 0)
             price_per_sqm = (price / area) if area > 0 else 0
             
-            # NEW: Get real market averages
-            market_avg = MarketAnalytics.get_market_averages(
-                property_type=property_data.get('property_type'),
-                location=property_data.get('location')
-            )
+            # Initialize analytics service
+            analytics = PropertyAnalytics()
             
-            neighborhood_avg = None
-            if property_data.get('neighborhood'):
-                neighborhood_avg = MarketAnalytics.get_market_averages(
-                    property_type=property_data.get('property_type'),
-                    location=property_data.get('location'),
-                    neighborhood=property_data.get('neighborhood')
-                )
+            # Get comprehensive market analysis if property_analysis object is provided
+            market_analytics = {}
+            if property_analysis:
+                location = property_analysis.property_location.split(',')[0]
+                
+                # Get market statistics
+                market_stats = analytics.get_location_market_stats(location, property_analysis.property_type)
+                
+                # Get comparable analysis
+                comparable_analysis = analytics.get_comparable_analysis(property_analysis)
+                
+                # Get market opportunity score
+                opportunity_analysis = analytics.get_market_opportunity_score(property_analysis)
+                
+                # Get negotiation insights
+                negotiation_insights = analytics.get_negotiation_insights(property_analysis)
+                
+                market_analytics = {
+                    'market_stats': market_stats,
+                    'comparable_analysis': comparable_analysis,
+                    'opportunity_analysis': opportunity_analysis,
+                    'negotiation_insights': negotiation_insights
+                }
             
-            # Calculate market position
-            market_context = ""
-            if market_avg:
-                market_price_per_sqm = market_avg['avg_price_per_sqm']
-                if market_price_per_sqm > 0 and price_per_sqm > 0:
-                    diff_percentage = ((price_per_sqm - market_price_per_sqm) / market_price_per_sqm) * 100
-                    market_context = f"""
-                    REAL MARKET DATA:
-                    - City average (€{market_price_per_sqm:.0f}/m²) vs This property (€{price_per_sqm:.0f}/m²)
-                    - Market position: {diff_percentage:+.1f}% vs city average
-                    - Sample size: {market_avg['total_properties']} comparable properties
-                    """
-                    
-                    if neighborhood_avg:
-                        neighborhood_price_per_sqm = neighborhood_avg['avg_price_per_sqm']
-                        neighborhood_diff = ((price_per_sqm - neighborhood_price_per_sqm) / neighborhood_price_per_sqm) * 100
-                        market_context += f"""
-                    - Neighborhood average (€{neighborhood_price_per_sqm:.0f}/m²)
-                    - Neighborhood position: {neighborhood_diff:+.1f}% vs neighborhood average
-                    """
-            
+            # Build enhanced prompt with analytics data
             prompt = f"""
-            ROLE: You are an elite Albanian real estate investment analyst specializing in ROI optimization.
+            ROLE: You are an elite Albanian real estate investment analyst specializing in ROI optimization with access to comprehensive market analytics.
 
             PROPERTY DATA:
             Title: {property_data.get('title', '')}
@@ -83,9 +76,9 @@ class PropertyAI:
             Condition: {property_data.get('condition', '')}
             Floor: {property_data.get('floor_level', '')}
 
-            {market_context}
-
             COMPARABLE PROPERTIES: {json.dumps(comparable_properties or [], indent=2)}
+
+            MARKET ANALYTICS: {json.dumps(market_analytics, indent=2)}
 
             2025 ALBANIAN MARKET CONTEXT:
             - Tirana center (Blloku): €3,500-5,000/m² (premium areas)
@@ -95,42 +88,55 @@ class PropertyAI:
             - Commercial ground floor: +30-50% premium
             - Rental yields: 5-8% annually
 
-            ANALYSIS FRAMEWORK - Use the REAL market data above for accurate assessment:
-            1. Price vs actual market averages (not just estimates)
-            2. Rental income potential
-            3. Investment opportunity scoring
-            4. Negotiation recommendations
+            ENHANCED ANALYSIS FRAMEWORK:
+            1. Price vs actual market averages (use market_analytics data)
+            2. Market opportunity score analysis
+            3. Negotiation leverage assessment
+            4. Rental income potential with market context
+            5. Risk assessment based on market sentiment
+            6. Actionable investment recommendations
 
             FORMAT AS JSON:
             {{
                 "investment_score": 85,
                 "recommendation": "strong_buy",
                 "summary": "High-yield investment opportunity in prime location",
+                "market_opportunity_score": 78.5,
                 "price_analysis": {{
                     "price_per_sqm": {price_per_sqm:.0f},
-                    "market_average_per_sqm": {market_avg['avg_price_per_sqm'] if market_avg else 1350},
                     "value_assessment": "below_market",
                     "market_position_percentage": -15.2,
-                    "negotiation_potential": "5-10%"
+                    "price_percentile": 35.5,
+                    "negotiation_potential": "5-10%",
+                    "recommended_offer_range": {{
+                        "min": {price * 0.9:.0f},
+                        "max": {price * 0.95:.0f}
+                    }}
                 }},
                 "rental_analysis": {{
                     "estimated_monthly_rent": 950,
                     "annual_gross_yield": "6.8%",
-                    "rental_demand": "high"
+                    "rental_demand": "high",
+                    "market_rental_trend": "increasing"
                 }},
                 "market_insights": [
-                    "Property priced 15% below city average",
+                    "Property priced 15% below market average",
                     "Strong neighborhood fundamentals",
-                    "Property type in high demand"
+                    "Property type in high demand",
+                    "Market sentiment: bullish"
                 ],
                 "risk_factors": [
-                    "Market volatility considerations"
+                    "Market volatility considerations",
+                    "Location-specific risks"
                 ],
+                "negotiation_leverage": "high",
                 "action_items": [
                     "Schedule property viewing immediately",
                     "Negotiate 5-8% additional reduction",
-                    "Secure financing pre-approval"
-                ]
+                    "Secure financing pre-approval",
+                    "Monitor market trends"
+                ],
+                "market_timing": "optimal"
             }}
             """
             

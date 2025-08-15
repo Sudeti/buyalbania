@@ -1,165 +1,72 @@
+<!-- ENHANCED: Premium my_analyses.html -->
 {% extends "property_ai/base.html" %}
-{% load static %}
 
-{% block title %}My Property Analyses{% endblock %}
-
-{% block extra_css %}
-<style>
-    .analysis-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        border: none;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .analysis-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
-    
-    .score-badge {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        color: white;
-    }
-    
-    .score-high { background: #10b981; }
-    .score-medium { background: #3b82f6; }
-    .score-low { background: #f59e0b; }
-    
-    .property-stats {
-        background: #f8fafc;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .stat-item {
-        text-align: center;
-        padding: 0.5rem;
-    }
-    
-    .stat-value {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #667eea;
-    }
-    
-    .stat-label {
-        font-size: 0.8rem;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .status-badge {
-        font-size: 0.75em;
-    }
-    
-    .recommendation-mini {
-        font-size: 0.7rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .filters-section {
-        background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    
-    .stats-overview {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        border-radius: 15px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stats-overview .stat-item {
-        border-right: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .stats-overview .stat-item:last-child {
-        border-right: none;
-    }
-    
-    .timeline-indicator {
-        font-size: 0.8rem;
-        color: #6b7280;
-    }
-    
-    .property-inactive {
-        opacity: 0.7;
-        border-left: 4px solid #f59e0b;
-    }
-</style>
-{% endblock %}
+{% block title %}Investment Dashboard{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-5">
+    <!-- Dashboard Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-building me-2"></i>My Property Analyses</h2>
-        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>New Analysis
+        <div>
+            <h1 class="display-4 fw-bold mb-2">
+                Investment Dashboard
+            </h1>
+            <p class="lead text-muted mb-0">
+                Track and manage your property analyses
+            </p>
+        </div>
+        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-lg me-2"></i>
+            New Analysis
         </a>
     </div>
-    
-    <!-- Statistics Overview -->
+
+    <!-- Stats Overview -->
     {% if stats.total > 0 %}
-    <div class="stats-overview">
-        <h4 class="text-center mb-4">Portfolio Overview</h4>
-        <div class="row">
-            <div class="col-3">
-                <div class="stat-item">
-                    <div class="stat-value">{{ stats.total }}</div>
-                    <div class="stat-label">Total Analyses</div>
+    <div class="card border-primary border-opacity-25 bg-primary bg-opacity-5 fade-in mb-4">
+        <div class="card-body p-4">
+            <h2 class="text-center mb-4">Portfolio Overview</h2>
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="text-center">
+                        <div class="h2 fw-bold text-primary mb-2">{{ stats.total }}</div>
+                        <div class="text-muted">Total Properties</div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-3">
-                <div class="stat-item">
-                    <div class="stat-value">{{ stats.completed }}</div>
-                    <div class="stat-label">Completed</div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="text-center">
+                        <div class="h2 fw-bold text-primary mb-2">{{ stats.completed }}</div>
+                        <div class="text-muted">Analyzed</div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-3">
-                <div class="stat-item">
-                    <div class="stat-value">{{ stats.avg_score|floatformat:1|default:"N/A" }}</div>
-                    <div class="stat-label">Avg Score</div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="text-center">
+                        <div class="h2 fw-bold text-primary mb-2">{{ stats.avg_score|floatformat:1|default:"N/A" }}</div>
+                        <div class="text-muted">Average Score</div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-3">
-                <div class="stat-item">
-                    <div class="stat-value">{{ stats.strong_buys }}</div>
-                    <div class="stat-label">Strong Buys</div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="text-center">
+                        <div class="h2 fw-bold text-primary mb-2">{{ stats.strong_buys }}</div>
+                        <div class="text-muted">Strong Buys</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
-{% if user_tier %}
-<div class="alert alert-info">
-    <div class="row align-items-center">
-        <div class="col-md-8">
-            <strong>{{ user_tier|title }} Plan:</strong>
-            Showing your {{ stats.total }} personal analyses.
-            {% if user_tier != 'premium' %}
-                {{ remaining_analyses }} analyses remaining this month.
-            {% endif %}
-        </div>
-        <div class="col-md-4 text-end">
+
+    <!-- Tier Info -->
+    {% if user_tier %}
+    <div class="alert alert-info fade-in mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ user_tier|title }} Plan</strong> • 
+                Showing your {{ stats.total }} personal analyses
+                {% if user_tier != 'premium' %}
+                    • {{ remaining_analyses }} analyses remaining this month
+                {% endif %}
+            </div>
             {% if user_tier == 'free' %}
                 <a href="#upgrade" class="btn btn-success btn-sm">Upgrade to Basic - €5</a>
             {% elif user_tier == 'basic' %}
@@ -167,232 +74,197 @@
             {% endif %}
         </div>
     </div>
-</div>
-{% endif %}
-    <!-- Filters -->
-    {% if analyses.count > 5 %}
-    <div class="filters-section">
-        <h5 class="mb-3">Filter Results</h5>
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label for="status" class="form-label">Status</label>
-                <select name="status" id="status" class="form-select">
-                    <option value="">All Statuses</option>
-                    <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completed</option>
-                    <option value="analyzing" {% if current_filters.status == 'analyzing' %}selected{% endif %}>Analyzing</option>
-                    <option value="failed" {% if current_filters.status == 'failed' %}selected{% endif %}>Failed</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="type" class="form-label">Property Type</label>
-                <select name="type" id="type" class="form-select">
-                    <option value="">All Types</option>
-                    {% for type in property_types %}
-                        <option value="{{ type }}" {% if current_filters.type == type %}selected{% endif %}>
-                            {{ type|title }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="location" class="form-label">Location</label>
-                <select name="location" id="location" class="form-select">
-                    <option value="">All Locations</option>
-                    {% for location in locations %}
-                        <option value="{{ location }}" {% if current_filters.location == location %}selected{% endif %}>
-                            {{ location }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-outline-primary me-2">Filter</button>
-                <a href="{% url 'property_ai:my_analyses' %}" class="btn btn-outline-secondary">Clear</a>
-            </div>
-        </form>
-    </div>
     {% endif %}
-    
+
     {% if analyses %}
-    <div class="row">
+    <!-- Properties Grid -->
+    <div class="row g-4">
         {% for analysis in analyses %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 analysis-card {% if not analysis.is_active %}property-inactive{% endif %}">
-                <div class="card-body position-relative">
-                    <!-- Investment Score Badge -->
-                    {% if analysis.investment_score %}
-                        <div class="score-badge 
-                            {% if analysis.investment_score >= 75 %}score-high
-                            {% elif analysis.investment_score >= 50 %}score-medium
-                            {% else %}score-low{% endif %}">
-                            {{ analysis.investment_score }}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card h-100 fade-in" style="animation-delay: {{ forloop.counter0|floatformat:1|add:'0.1' }}s; transition: all 0.3s ease; {% if not analysis.is_active %}opacity: 0.8; border-left: 4px solid var(--bs-warning);{% endif %}">
+                <div class="card-body p-4">
+                    <!-- Status & Score Header -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex gap-2">
+                            {% if analysis.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif analysis.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                            {% elif analysis.status == 'analyzing' %}
+                                <span class="badge bg-warning">Analyzing</span>
+                            {% endif %}
+                            
+                            {% if not analysis.is_active %}
+                                <span class="badge bg-warning">Removed</span>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                    
-                    <!-- Status Badge -->
-                    <div class="mb-2">
-                        {% if analysis.status == 'completed' %}
-                            <span class="badge bg-success status-badge">Completed</span>
-                        {% elif analysis.status == 'failed' %}
-                            <span class="badge bg-danger status-badge">Failed</span>
-                        {% elif analysis.status == 'analyzing' %}
-                            <span class="badge bg-warning status-badge">Analyzing</span>
-                        {% endif %}
                         
-                        {% if not analysis.is_active %}
-                            <span class="badge bg-secondary status-badge ms-1">Removed</span>
+                        {% if analysis.investment_score %}
+                        <div class="text-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white small" style="width: 50px; height: 50px; background: {% if analysis.investment_score >= 80 %}var(--bs-success){% elif analysis.investment_score >= 60 %}var(--bs-primary){% else %}var(--bs-warning){% endif %};">
+                                {{ analysis.investment_score }}
+                            </div>
+                        </div>
                         {% endif %}
                     </div>
+
+                    <!-- Property Title & Location -->
+                    <h3 class="h5 mb-2 lh-sm">
+                        {{ analysis.property_title|truncatechars:50 }}
+                    </h3>
                     
-                    <h5 class="card-title">{{ analysis.property_title|truncatechars:45 }}</h5>
-                    
-                    <p class="card-text text-muted mb-2">
-                        <i class="fas fa-map-marker-alt me-1"></i>{{ analysis.property_location }}
+                    <div class="text-muted mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>{{ analysis.property_location }}</span>
                         {% if analysis.neighborhood %}
-                            <br><small class="text-muted">{{ analysis.neighborhood }}</small>
+                            <span>•</span>
+                            <span>{{ analysis.neighborhood }}</span>
                         {% endif %}
-                    </p>
-                    
+                    </div>
+
                     <!-- Property Stats -->
-                    <div class="property-stats">
-                        <div class="row text-center">
+                    <div class="bg-light rounded p-3 mb-3">
+                        <div class="row g-3 text-center">
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-value">€{{ analysis.asking_price|floatformat:0 }}</div>
-                                    <div class="stat-label">Price</div>
+                                <div class="fw-bold text-primary small mb-1">
+                                    €{{ analysis.asking_price|floatformat:0 }}
                                 </div>
+                                <div class="text-muted small">Price</div>
                             </div>
+                            
                             {% if analysis.usable_area %}
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-value">{{ analysis.usable_area }}</div>
-                                    <div class="stat-label">m²</div>
+                                <div class="fw-bold small mb-1">
+                                    {{ analysis.usable_area }}m²
                                 </div>
+                                <div class="text-muted small">Area</div>
                             </div>
                             {% endif %}
+                            
                             {% if analysis.price_per_sqm %}
                             <div class="col-4">
-                                <div class="stat-item">
-                                    <div class="stat-value">€{{ analysis.price_per_sqm|floatformat:0 }}</div>
-                                    <div class="stat-label">per m²</div>
+                                <div class="fw-bold small mb-1">
+                                    €{{ analysis.price_per_sqm|floatformat:0 }}
                                 </div>
+                                <div class="text-muted small">per m²</div>
                             </div>
                             {% endif %}
                         </div>
                     </div>
-                    
+
                     <!-- Recommendation Badge -->
                     {% if analysis.recommendation and analysis.status == 'completed' %}
-                    <div class="mb-3 text-center">
+                    <div class="text-center mb-3">
                         {% if analysis.recommendation == 'strong_buy' %}
-                            <span class="badge bg-success recommendation-mini">Strong Buy</span>
+                            <span class="badge bg-success px-3 py-2">Strong Buy</span>
                         {% elif analysis.recommendation == 'buy' %}
-                            <span class="badge bg-primary recommendation-mini">Buy</span>
+                            <span class="badge bg-primary px-3 py-2">Buy</span>
                         {% elif analysis.recommendation == 'hold' %}
-                            <span class="badge bg-warning recommendation-mini">Hold</span>
+                            <span class="badge bg-warning px-3 py-2">Hold</span>
                         {% elif analysis.recommendation == 'avoid' %}
-                            <span class="badge bg-danger recommendation-mini">Avoid</span>
+                            <span class="badge bg-danger px-3 py-2">Avoid</span>
                         {% endif %}
                     </div>
                     {% endif %}
-                    
-                    <!-- Property Type & Condition -->
-                    <div class="mb-2">
-                        <small class="text-muted">
-                            {{ analysis.property_type|title }}
-                            {% if analysis.property_condition %}
-                                • {{ analysis.property_condition|title }}
-                            {% endif %}
-                        </small>
-                    </div>
-                    
-                    <!-- Timeline -->
-                    <div class="timeline-indicator mb-3">
-                        <i class="fas fa-clock me-1"></i>
-                        {{ analysis.days_on_market }} days on market
-                        {% if not analysis.is_active %}
-                            <br><i class="fas fa-exclamation-triangle me-1"></i>
-                            Removed {{ analysis.removed_date|timesince }} ago
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">{{ analysis.created_at|date:"M j, Y" }}</small>
-                        <div>
-                            <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" 
-                               class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-eye me-1"></i>View
-                            </a>
-                            {% if analysis.report_generated and analysis.report_file_path %}
-                                <a href="{% url 'property_ai:download_report' analysis_id=analysis.id %}" 
-                                   class="btn btn-outline-success btn-sm ms-1">
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    
-    <!-- Pagination if you have many analyses -->
-    {% if analyses.count > 20 %}
-    <div class="d-flex justify-content-center mt-4">
-        <nav aria-label="Property analyses pagination">
-            <ul class="pagination">
-                <li class="page-item">
-                    <a class="page-link" href="#" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item">
-                    <a class="page-link" href="#" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </div>
-    {% endif %}
-    
-    {% else %}
-    <!-- No Analyses State -->
-    <div class="text-center py-5">
-        <div class="mb-4">
-            <i class="fas fa-building fa-4x text-muted mb-4"></i>
-            <h3>No Property Analyses Yet</h3>
-            <p class="text-muted mb-4">Start analyzing Albanian properties to get AI-powered investment insights.</p>
-        </div>
-        
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h5>Get Started with Property Analysis</h5>
-                        <p class="text-muted">
-                            Our AI analyzes Albanian real estate properties to provide investment insights including:
-                        </p>
-                        <ul class="list-unstyled text-start">
-                            <li><i class="fas fa-check text-success me-2"></i>Investment scoring (0-100)</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Market position analysis</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Rental yield estimates</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Risk assessment</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Action recommendations</li>
-                        </ul>
-                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg mt-3">
-                            <i class="fas fa-plus me-2"></i>Analyze Your First Property
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+
+                    <!-- Property Meta -->
+                    <div class="mb-3 small text-muted">
+                       <div class="d-flex justify-content-between mb-1">
+                           <span>{{ analysis.property_type|title }}</span>
+                           {% if analysis.property_condition %}
+                               <span>{{ analysis.property_condition|title }}</span>
+                           {% endif %}
+                       </div>
+                       
+                       <div class="d-flex justify-content-between">
+                           <span>{{ analysis.days_on_market }} days on market</span>
+                           <span>{{ analysis.created_at|date:"M j" }}</span>
+                       </div>
+                       
+                       {% if not analysis.is_active %}
+                       <div class="text-warning mt-2 d-flex align-items-center gap-2">
+                           <i class="bi bi-exclamation-triangle"></i>
+                           <span>Removed {{ analysis.removed_date|timesince }} ago</span>
+                       </div>
+                       {% endif %}
+                   </div>
+
+                   <!-- Action Buttons -->
+                   <div class="d-flex justify-content-between align-items-center">
+                       <div class="small text-muted">
+                           {{ analysis.created_at|date:"M j, Y" }}
+                       </div>
+                       <div class="d-flex gap-2">
+                           <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" 
+                              class="btn btn-outline-secondary btn-sm">
+                               <i class="bi bi-eye me-1"></i>
+                               View
+                           </a>
+                           {% if analysis.report_generated and analysis.report_file_path %}
+                               <a href="{% url 'property_ai:download_report' analysis_id=analysis.id %}" 
+                                  class="btn btn-primary btn-sm">
+                                   <i class="bi bi-file-earmark-text me-1"></i>
+                                   PDF
+                               </a>
+                           {% endif %}
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+       {% endfor %}
+   </div>
+   
+   {% else %}
+   <!-- Empty State -->
+   <div class="card text-center py-5">
+       <div class="card-body fade-in">
+           <div class="display-1 mb-4 opacity-50">🏢</div>
+           <h2 class="display-6 fw-bold mb-4">
+               No Properties Yet
+           </h2>
+           <p class="lead text-muted mb-5 mx-auto" style="max-width: 500px;">
+               Start analyzing Albanian properties to get AI-powered investment insights and build your portfolio.
+           </p>
+           
+           <div class="card border-primary border-opacity-25 bg-primary bg-opacity-5 mx-auto mb-5" style="max-width: 600px;">
+               <div class="card-body">
+                   <h3 class="mb-4">What you'll get:</h3>
+                   <div class="row g-3 text-start">
+                       <div class="col-md-6">
+                           <div class="d-flex align-items-center gap-2">
+                               <i class="bi bi-check-circle-fill text-success"></i>
+                               <span>Investment scoring (0-100)</span>
+                           </div>
+                       </div>
+                       <div class="col-md-6">
+                           <div class="d-flex align-items-center gap-2">
+                               <i class="bi bi-check-circle-fill text-success"></i>
+                               <span>Market position analysis</span>
+                           </div>
+                       </div>
+                       <div class="col-md-6">
+                           <div class="d-flex align-items-center gap-2">
+                               <i class="bi bi-check-circle-fill text-success"></i>
+                               <span>Rental yield estimates</span>
+                           </div>
+                       </div>
+                       <div class="col-md-6">
+                           <div class="d-flex align-items-center gap-2">
+                               <i class="bi bi-check-circle-fill text-success"></i>
+                               <span>Professional recommendations</span>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+           
+           <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
+               <i class="bi bi-plus-lg me-2"></i>
+               Analyze Your First Property
+           </a>
+       </div>
+   </div>
+   {% endif %}
 </div>
 {% endblock %}

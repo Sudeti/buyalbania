@@ -1,6 +1,6 @@
 # Updated urls.py
 from django.urls import path
-from apps.property_ai.views import analysis_views, home_views, report_views
+from apps.property_ai.views import analysis_views, home_views, report_views, analytics_views
 
 app_name = 'property_ai'
 
@@ -12,12 +12,11 @@ urlpatterns = [
     
     # User pages
     path('my-analyses/', analysis_views.my_analyses, name='my_analyses'),
+    path('analytics/', analytics_views.analytics_dashboard, name='analytics_dashboard'),
     
-  
+    # API endpoints
+    path('api/market-insights/', analytics_views.market_insights_api, name='market_insights_api'),
+    path('api/opportunity-analysis/<uuid:analysis_id>/', analytics_views.opportunity_analysis_api, name='opportunity_analysis_api'),
     
     path('download-report/<uuid:analysis_id>/', report_views.download_report, name='download_report'),
-    
-    # API endpoints (optional for future)
-    # path('api/quick-analysis/', views.quick_analysis_api, name='quick_analysis_api'),
-    # path('api/comparable-properties/', views.comparable_properties_api, name='comparable_properties_api'),
 ]

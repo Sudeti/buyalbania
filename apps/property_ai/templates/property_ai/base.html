@@ -2,361 +2,428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Base -->
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{% block title %}AI Property Investment Analysis{% endblock %}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}PropertyAI - Professional Real Estate Analysis{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bs-primary: #2563eb;
+            --bs-primary-rgb: 37, 99, 235;
+            --bs-secondary: #64748b;
+            --bs-success: #10b981;
+            --bs-warning: #f59e0b;
+            --bs-danger: #ef4444;
+            --bs-info: #06b6d4;
+            --bs-light: #f8fafc;
+            --bs-dark: #0f172a;
+            --bs-body-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            --bs-heading-font-family: 'Space Grotesk', 'Inter', sans-serif;
+        }
 
-  <!-- SEO -->
-  <meta name="description" content="{% block meta_description %}AI-powered investment analysis for Albanian real estate — data-driven insights, risk scoring, and professional reports.{% endblock %}">
-  <meta name="author" content="AI Property Analysis">
+        body {
+            font-family: var(--bs-body-font-family);
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
 
-  <!-- Social -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="{{ request.build_absolute_uri }}" />
-  <meta property="og:title" content="{% block og_title %}AI Property Investment Analysis{% endblock %}" />
-  <meta property="og:description" content="{% block og_description %}AI-powered investment analysis for Albanian real estate.{% endblock %}" />
-  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'property_ai/img/og-image.jpg' %}" />
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--bs-heading-font-family);
+            font-weight: 600;
+        }
 
-  <!-- Fonts (preload + use) -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+        /* Custom Components */
+        .navbar-brand {
+            font-family: var(--bs-heading-font-family);
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-  <!-- Favicon -->
-  <link rel="icon" href="{% static 'property_ai/favicon.ico' %}">
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
 
-  <!-- CSS libs -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <!-- AOS (Animate On Scroll) -->
-  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+        .navbar-nav .nav-link {
+            font-weight: 500;
+            color: #475569;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
 
-  <!-- Core Styles -->
-  <style>
-    :root{
-      --bg-deep:#0f1724; /* deep navy */
-      --card-glass: rgba(255,255,255,0.06);
-      --accent: #d4af37; /* gold */
-      --muted: rgba(255,255,255,0.72);
-      --glass-strong: rgba(255,255,255,0.08);
-      --radius: 14px;
-      --max-width: 1200px;
-    }
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            color: var(--bs-primary);
+            background-color: rgba(37, 99, 235, 0.1);
+        }
 
-    /* Page */
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(20,30,45,0.45), transparent 10%),
-                  radial-gradient(800px 400px at 90% 90%, rgba(16,22,36,0.5), transparent 10%),
-                  var(--bg-deep);
-      color: #fff;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      line-height:1.5;
-    }
+        .btn {
+            font-weight: 600;
+            border-radius: 0.75rem;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s ease;
+        }
 
-    /* Subtle svg texture overlay */
-    .bg-pattern {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.06;
-    }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-    /* NAV */
-    .navbar {
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      backdrop-filter: blur(8px);
-      transition: padding 240ms ease, box-shadow 240ms ease, background 240ms ease;
-      padding: 18px 0;
-    }
-    .navbar.shrink { padding: 8px 0; box-shadow: 0 8px 30px rgba(2,6,23,0.6); }
-    .navbar-brand { font-family: "Playfair Display", serif; color: var(--accent) !important; font-weight:700; display:flex; align-items:center; gap:.6rem; }
-    .navbar-logo{ height:38px; width:auto; display:inline-block; }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-    .nav-link { color: var(--muted) !important; transition: color .18s ease; }
-    .nav-link:focus, .nav-link:hover { color: #fff !important; text-decoration: none; }
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #ffffff 0%, #fefefe 100%);
+        }
 
-    /* HERO */
-    .hero {
-      min-height: 78vh;
-      display:flex;
-      align-items:center;
-      position:relative;
-      padding-top:6.5rem;
-      padding-bottom:4rem;
-    }
-    .hero .card-hero {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border-radius: calc(var(--radius) + 6px);
-      padding: 3.2rem;
-      max-width: var(--max-width);
-      margin: 0 auto;
-      box-shadow: 0 10px 40px rgba(2,6,23,0.6);
-      display:grid;
-      grid-template-columns: 1fr 420px;
-      gap: 2rem;
-      align-items:center;
-      border: 1px solid rgba(255,255,255,0.04);
-      backdrop-filter: blur(10px);
-    }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
 
-    .hero-title {
-      font-family: "Playfair Display", serif;
-      font-size: clamp(2rem, 3.8vw, 2.9rem);
-      line-height:1.02;
-      margin:0 0 .8rem 0;
-      color: #fff;
-    }
-    .hero-sub {
-      color: var(--muted);
-      margin-bottom:1.35rem;
-      max-width:60ch;
-    }
+        .form-control {
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
 
-    .cta-row { display:flex; gap:.9rem; align-items:center; flex-wrap:wrap; }
-    .btn-primary-cta {
-      background: var(--accent);
-      color: #08101a;
-      border: none;
-      padding: .76rem 1.4rem;
-      border-radius: 999px;
-      font-weight:600;
-      box-shadow: 0 8px 24px rgba(212,175,55,0.12);
-    }
-    .btn-ghost { background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); border-radius:999px; padding:.6rem 1rem; }
+        .form-control:focus {
+            border-color: var(--bs-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
 
-    /* Hero stats (right column) */
-    .hero-stats { display:flex; flex-direction:column; gap:.8rem; }
-    .stat-pill { background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:.8rem 1rem; border-radius:12px; display:flex; align-items:center; gap:.8rem; border:1px solid rgba(255,255,255,0.03); }
-    .stat-value { font-weight:700; color:#fff; font-size:1.05rem; }
+        .badge {
+            font-weight: 600;
+            border-radius: 0.5rem;
+            padding: 0.375rem 0.75rem;
+        }
 
-    /* FEATURES */
-    .features { max-width: var(--max-width); margin: 3.5rem auto; display:grid; grid-template-columns: repeat(3,1fr); gap:1.25rem; padding:0 1rem; }
-    .glass-card {
-      background: var(--card-glass);
-      border-radius: var(--radius);
-      padding:1.6rem;
-      min-height: 140px;
-      border: 1px solid rgba(255,255,255,0.04);
-      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
-      transition: transform .28s ease, box-shadow .28s ease;
-    }
-    .glass-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(2,6,23,0.7); }
+        .dropdown-menu {
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
 
-    .feature-icon {
-      width:56px;height:56px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border:1px solid rgba(255,255,255,0.03);
-      font-size:1.1rem;
-      margin-bottom:.6rem;
-      color:var(--accent);
-    }
-    .feature-title { font-weight:600; margin-bottom:.35rem; color:#fff; }
-    .feature-desc { color:var(--muted); font-size:.95rem; }
+        .dropdown-item {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
 
-    /* TRUST / BADGES */
-    .trust { display:flex; gap:1rem; align-items:center; justify-content:center; flex-wrap:wrap; margin-top:1.2rem; color:var(--muted); }
-    .trust .badge { background: transparent; border:1px solid rgba(255,255,255,0.04); padding:.45rem .75rem; border-radius:999px; }
+        .dropdown-item:hover {
+            background-color: rgba(37, 99, 235, 0.1);
+            color: var(--bs-primary);
+        }
 
-    /* FOOTER */
-    .footer {
-      margin-top: 3.8rem;
-      padding: 3rem 0;
-      border-top:1px solid rgba(255,255,255,0.03);
-      color: var(--muted);
-    }
-    .footer a { color: var(--muted); text-decoration:none; }
-    .footer a:hover { color: #fff; }
+        .alert {
+            border-radius: 1rem;
+            border: none;
+            padding: 1rem 1.5rem;
+        }
 
-    /* Responsive */
-    @media (max-width: 991px){
-      .hero .card-hero { grid-template-columns: 1fr; padding: 2rem; }
-      .features { grid-template-columns: repeat(2,1fr); }
-    }
-    @media (max-width: 640px){
-      .features { grid-template-columns: 1fr; gap:1rem; padding:0 1rem; }
-      .stat-pill { flex-direction:column; align-items:flex-start; }
-    }
-  </style>
+        .alert-info {
+            background-color: rgba(37, 99, 235, 0.1);
+            color: var(--bs-primary);
+        }
 
-  {% block extra_css %}{% endblock %}
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--bs-success);
+        }
+
+        .alert-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--bs-warning);
+        }
+
+        /* Score Circle */
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        }
+
+        .score-high {
+            background: linear-gradient(135deg, var(--bs-success), #059669);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+        }
+
+        .score-medium {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+        }
+
+        .score-low {
+            background: linear-gradient(135deg, var(--bs-warning), #d97706);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bs-dark);
+            color: white;
+            margin-top: 4rem;
+        }
+
+        footer .navbar-brand {
+            color: white;
+            -webkit-text-fill-color: white;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .score-circle {
+                width: 100px;
+                height: 100px;
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-  <!-- subtle repeating SVG pattern (low opacity) -->
-  <svg class="bg-pattern" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 800" aria-hidden="true">
-    <defs>
-      <pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse">
-        <rect width="80" height="80" fill="none"/>
-        <path d="M0 80 L80 0" stroke="#fff" stroke-width="1" stroke-opacity="0.03"/>
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#p)"></rect>
-  </svg>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="{% url 'property_ai:home' %}">
-      AI Property
-    </a>
-    
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navCollapse">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'property_ai:home' %}">PropertyAI</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'property_ai:analyze_property' %}">
+                            <i class="bi bi-search"></i> Analyze
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'property_ai:my_analyses' %}">
+                                <i class="bi bi-graph-up"></i> My Analyses
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'property_ai:analytics_dashboard' %}">
+                                <i class="bi bi-bar-chart"></i> Analytics
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
+                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; color: white; font-weight: 600; font-size: 0.875rem;">
+                                    {{ user.first_name.0|default:user.username.0|upper }}
+                                </div>
+                                <div class="d-none d-md-block text-start">
+                                    <div class="fw-medium">{{ user.first_name|default:user.username }}</div>
+                                    <small class="badge bg-{% if user.profile.subscription_tier == 'premium' %}success{% elif user.profile.subscription_tier == 'basic' %}primary{% else %}warning{% endif %}">
+                                        {{ user.profile.subscription_tier|title|default:"Free" }}
+                                    </small>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" style="min-width: 320px;">
+                                <li>
+                                    <div class="px-3 py-3 border-bottom">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; color: white; font-weight: 700; font-size: 1.125rem;">
+                                                {{ user.first_name.0|default:user.username.0|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ user.first_name|default:user.username }}</div>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3 p-3 bg-light rounded">
+                                            <div class="badge bg-{% if user.profile.subscription_tier == 'premium' %}success{% elif user.profile.subscription_tier == 'basic' %}primary{% else %}warning{% endif %} mb-2">
+                                                {{ user.profile.subscription_tier|title|default:"Free" }} Plan
+                                            </div>
+                                            {% if user.profile.subscription_tier != 'premium' %}
+                                                <div class="small text-muted">
+                                                    {{ user.profile.remaining_analyses|default:1 }} analyses left this month
+                                                </div>
+                                            {% else %}
+                                                <div class="small text-success">
+                                                    Unlimited analyses
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                                
+                                <li><a class="dropdown-item" href="{% url 'property_ai:my_analyses' %}">
+                                    <i class="bi bi-graph-up me-2"></i>My Analyses
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'property_ai:analytics_dashboard' %}">
+                                    <i class="bi bi-bar-chart me-2"></i>Analytics Dashboard
+                                </a></li>
+                                
+                                <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">
+                                    <i class="bi bi-person me-2"></i>Profile & Settings
+                                </a></li>
+                                
+                                {% if user.profile.subscription_tier != 'premium' %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded" href="#upgrade">
+                                        <i class="bi bi-star me-2"></i>
+                                        <div>
+                                            <div class="fw-semibold">
+                                                {% if user.profile.subscription_tier == 'free' %}Upgrade to Basic{% else %}Go Premium{% endif %}
+                                            </div>
+                                            <small class="opacity-75">
+                                                {% if user.profile.subscription_tier == 'free' %}10 analyses/month • €5{% else %}Unlimited • €15{% endif %}
+                                            </small>
+                                        </div>
+                                    </a></li>
+                                {% endif %}
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-muted" href="{% url 'accounts:logout' %}">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Sign In</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary btn-sm" href="{% url 'accounts:register' %}">Get Started Free</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <div class="collapse navbar-collapse" id="navCollapse">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'property_ai:analyze_property' %}">Analyze</a>
-        </li>
-        {% if user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'property_ai:my_analyses' %}">My Analyses</a>
-          </li>
-      
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-              {{ user.username }}
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">Profile</a></li>
-              {% if user.profile.subscription_tier != 'premium' %}
-                <li><a class="dropdown-item text-success" href="#upgrade">Upgrade Plan</a></li>
-              {% endif %}
-              <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
-            </ul>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
-          </li>
-          <li class="nav-item">
-            <a class="btn btn-primary btn-sm ms-2" href="{% url 'accounts:register' %}">Sign Up Free</a>
-          </li>
+    <!-- Main Content -->
+    <main>
+        {% if messages %}
+        <div class="container mt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} fade-in">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
         {% endif %}
-      </ul>
-    </div>
-  </div>
-</nav>
-<header class="simple-header" style="padding: 6rem 0 2rem 0; text-align: center;">
 
-  <!-- NOTIFICATIONS -->
-  <div class="container" style="max-width:var(--max-width); margin-top:1rem; padding:0 1rem;">
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mt-3" role="alert" data-aos="fade-up">
-          <i class="fa-solid fa-info-circle me-2"></i> {{ message }}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-5">
+        <div class="container">
+            <div class="row py-4">
+                <div class="col-lg-4 mb-3">
+                    <div class="h5 mb-2">PropertyAI</div>
+                    <p class="text-white-50 small mb-3">
+                        Professional AI-powered property analysis for the Albanian real estate market.
+                    </p>
+                    <div class="d-flex">
+                        <div class="bg-white bg-opacity-10 rounded p-2 text-center" style="min-width: 80px;">
+                            <div class="text-white fw-bold">{{ stats.total_analyses|default:"1000+" }}</div>
+                            <div class="text-white-50 small">Properties Analyzed</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-3">
+                    <h6 class="text-white mb-2">Product</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-1"><a href="{% url 'property_ai:analyze_property' %}" class="text-white-50 text-decoration-none">Property Analysis</a></li>
+                        <li class="mb-1"><a href="{% url 'property_ai:my_analyses' %}" class="text-white-50 text-decoration-none">Dashboard</a></li>
+                        <li class="mb-1"><a href="#" class="text-white-50 text-decoration-none">API Access</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-6 mb-3">
+                    <h6 class="text-white mb-2">Support</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-1"><a href="#" class="text-white-50 text-decoration-none">Help Center</a></li>
+                        <li class="mb-1"><a href="#" class="text-white-50 text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-1"><a href="#" class="text-white-50 text-decoration-none">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-top border-secondary pt-3 pb-2">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <small class="text-white-50">© 2025 PropertyAI. All rights reserved.</small>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-white-50">Made with ❤️ for Albanian real estate</small>
+                    </div>
+                </div>
+            </div>
         </div>
-      {% endfor %}
-    {% endif %}
-  </div>
+    </footer>
 
-  <!-- FEATURES (animated) -->
-  <section class="features" aria-labelledby="featuresHeading" role="region">
-    <h2 id="featuresHeading" class="visually-hidden">Platform features</h2>
-
-    <div class="glass-card" data-aos="fade-up" data-aos-delay="60">
-      <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
-      <div>
-        <div class="feature-title">Investment Scoring</div>
-        <div class="feature-desc">Data-driven score combining location, price dynamics, and rental potential — clear and comparable.</div>
-      </div>
-    </div>
-
-    <div class="glass-card" data-aos="fade-up" data-aos-delay="140">
-      <div class="feature-icon"><i class="fa-solid fa-house-chimney"></i></div>
-      <div>
-        <div class="feature-title">Market Comparison</div>
-        <div class="feature-desc">Compare neighborhoods, historical trends, and comparable listings within Tirana and nationwide.</div>
-      </div>
-    </div>
-
-    <div class="glass-card" data-aos="fade-up" data-aos-delay="220">
-      <div class="feature-icon"><i class="fa-solid fa-file-pdf"></i></div>
-      <div>
-        <div class="feature-title">Professional Reports</div>
-        <div class="feature-desc">Download PDF reports designed for investors, banks, and property managers.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- MAIN CONTENT SLOT -->
-  <main class="container" style="max-width:var(--max-width); padding: 2.2rem 1rem;" aria-live="polite">
-    {% block content %}
-    <!-- default content can go here -->
-    {% endblock %}
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container" style="max-width:var(--max-width);">
-      <div class="row">
-        <div class="col-md-5">
-          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;">
-            <img src="{% static 'property_ai/logo.png' %}" alt="AI Property logo" style="height:30px;">
-            <strong style="color:#fff">AI Property Analysis</strong>
-          </div>
-          <p style="margin:0 .2rem 0 0; color:var(--muted);">Professional property investment analysis powered by AI. Local expertise with global standards.</p>
-          <p class="mt-2" style="color:var(--muted);"><strong>Contact:</strong> <a href="mailto:support@aipropertyanalysis.com">support@aipropertyanalysis.com</a></p>
-        </div>
-
-        <div class="col-md-2">
-          <h6 style="color:#fff">Explore</h6>
-          <ul style="list-style:none;padding:0;margin:0;color:var(--muted)">
-            <li><a href="{% url 'property_ai:home' %}">Home</a></li>
-            <li><a href="{% url 'property_ai:analyze_property' %}">Analyze Property</a></li>
-            <li><a href="{% url 'accounts:privacy_policy' %}">Privacy Policy</a></li>
-          </ul>
-        </div>
-
-        <div class="col-md-3">
-          <h6 style="color:#fff">Features</h6>
-          <ul style="list-style:none;padding:0;margin:0;color:var(--muted)">
-            <li>Investment Scoring</li>
-            <li>Market Comparison</li>
-            <li>Rental Yield Analysis</li>
-          </ul>
-        </div>
-
-        <div class="col-md-2 text-md-end" style="align-self:center;">
-          <small style="color:var(--muted)">&copy; 2025 AI Property Analysis</small>
-          <div style="margin-top:.6rem;color:var(--muted)">Made with <i class="fa-solid fa-heart" style="color:#e25555"></i> for Albanian real estate</div>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
-  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js" defer></script>
-
-  <script>
-    // init AOS
-    document.addEventListener('DOMContentLoaded', function(){
-      if(window.AOS) AOS.init({ once: true, duration: 700, easing: 'ease-out-cubic' });
-
-      // shrink navbar on scroll
-      const nav = document.getElementById('mainNav');
-      const shrinkTrigger = 80;
-      function onScroll(){
-        if(window.scrollY > shrinkTrigger) nav.classList.add('shrink'); else nav.classList.remove('shrink');
-      }
-      onScroll();
-      window.addEventListener('scroll', onScroll, { passive: true });
-
-      // smooth scroll for internal anchors
-      document.querySelectorAll('a[href^="#"]').forEach(a=>{
-        a.addEventListener('click', function(e){
-          const target = document.querySelector(this.getAttribute('href'));
-          if(target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth', block:'start'}); }
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Set active nav link
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentLocation = location.pathname;
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link:not(.dropdown-toggle)');
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentLocation) {
+                    link.classList.add('active');
+                }
+            });
         });
-      });
-    });
-  </script>
-
-  {% block extra_js %}{% endblock %}
+    </script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

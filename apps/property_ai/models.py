@@ -57,7 +57,7 @@ class PropertyAnalysis(TimeStampedModel):
     view_count = models.IntegerField(default=0)
     description = models.TextField(blank=True)
     
-    # Analysis results - KEEP SAME
+    # Analysis results - ENHANCED
     analysis_result = models.JSONField(default=dict)
     ai_summary = models.TextField(blank=True)
     investment_score = models.IntegerField(
@@ -70,6 +70,30 @@ class PropertyAnalysis(TimeStampedModel):
         ('hold', 'Hold'),
         ('avoid', 'Avoid')
     ], null=True, blank=True)
+    
+    # NEW: Enhanced analytics fields
+    market_opportunity_score = models.DecimalField(
+        max_digits=5, decimal_places=1, null=True, blank=True,
+        help_text="Market opportunity score (0-100)"
+    )
+    price_percentile = models.DecimalField(
+        max_digits=5, decimal_places=1, null=True, blank=True,
+        help_text="Price percentile among comparable properties"
+    )
+    market_position_percentage = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Price position vs market average (%)"
+    )
+    negotiation_leverage = models.CharField(max_length=20, choices=[
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low')
+    ], null=True, blank=True, help_text="Buyer's negotiation leverage")
+    market_sentiment = models.CharField(max_length=20, choices=[
+        ('bullish', 'Bullish'),
+        ('neutral', 'Neutral'),
+        ('bearish', 'Bearish')
+    ], null=True, blank=True, help_text="Market sentiment at analysis time")
     
     STATUS_CHOICES = [
         ('analyzing', _('Analyzing')),
@@ -159,18 +183,6 @@ class PropertyAnalysis(TimeStampedModel):
     @property
     def square_meters(self):
         return self.usable_area
-    
-    @property
-    def market_position(self):
-        from .market_analytics import MarketAnalytics
-        return MarketAnalytics.get_property_market_position(self)
-
-    @property
-    def is_below_market(self):
-        position = self.market_position
-        if position and position['city_comparison']:
-            return position['city_comparison']['is_below_market']
-        return False
     
     class Meta:
         ordering = ['-created_at']

@@ -1,184 +1,361 @@
+<!-- ENHANCED: Premium profile.html -->
 {% extends 'property_ai/base.html' %}
-{% load static %}
 
-{% block title %}Your Profile - AI Property Analysis{% endblock %}
-
-{% block extra_css %}
-<style>
-    .profile-container {
-        padding: 50px 0;
-    }
-    
-    .profile-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 15px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    
-    .profile-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
-        overflow: hidden;
-    }
-    
-    .profile-card-header {
-        background: #f8fafc;
-        padding: 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .profile-card-header h3 {
-        margin: 0;
-        color: #374151;
-        font-weight: 600;
-    }
-    
-    .profile-card-body {
-        padding: 1.5rem;
-    }
-    
-    .analysis-item {
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: transform 0.2s ease;
-    }
-    
-    .analysis-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    .status-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 15px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    
-    .status-analyzing { background: #dbeafe; color: #1e40af; }
-    .status-completed { background: #d1fae5; color: #059669; }
-    .status-failed { background: #fee2e2; color: #dc2626; }
-</style>
-{% endblock %}
+{% block title %}Profile Settings - PropertyAI{% endblock %}
 
 {% block content %}
-<div class="container profile-container">
-    {% if messages %}
-    <div class="messages mb-4">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
-    <div class="profile-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1>Welcome, {{ user.username }}</h1>
-                <p class="mb-0">Manage your property analyses and account settings</p>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-outline-light">
-                    <i class="fas fa-plus me-2"></i>New Analysis
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <!-- Account Information -->
-        <div class="col-md-4">
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <h3><i class="fas fa-user me-2"></i>Account Settings</h3>
-                </div>
-                <div class="profile-card-body">
-                    <div class="mb-3">
-                        <strong>Username:</strong><br>
-                        {{ user.username }}
-                    </div>
-                    <div class="mb-3">
-                        <strong>Email:</strong><br>
-                        {{ user.email }}
-                    </div>
-                    <div class="mb-3">
-                        <strong>Member Since:</strong><br>
-                        {{ user.date_joined|date:"F Y" }}
-                    </div>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'accounts:delete_profile_confirm' %}" class="btn btn-outline-danger btn-sm">
-                            Delete Profile
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Property Analyses -->
-        <div class="col-md-8">
-            <div class="profile-card">
-                <div class="profile-card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3><i class="fas fa-building me-2"></i>Your Property Analyses</h3>
-                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>New Analysis
-                        </a>
-                    </div>
-                </div>
-                <div class="profile-card-body">
-                    {% if analyses %}
-                    {% for analysis in analyses %}
-                    <div class="analysis-item">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h5 class="mb-1">{{ analysis.property_title|truncatechars:50 }}</h5>
-                                <p class="text-muted mb-1">{{ analysis.property_location }}</p>
-                                <small class="text-muted">{{ analysis.created_at|date:"M j, Y" }}</small>
-                            </div>
-                            <span class="status-badge status-{{ analysis.status }}">
-                                {{ analysis.status }}
-                            </span>
+<div class="container py-5">
+    <!-- Profile Header -->
+    <div class="card fade-in mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-4">
+                        <!-- User Avatar -->
+                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); color: white; font-size: 1.5rem; border: 3px solid rgba(255,255,255,0.3);">
+                            {{ user.first_name.0|default:user.username.0|upper }}
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>€{{ analysis.asking_price|floatformat:0 }}</strong>
-                                {% if analysis.square_meters %}
-                                <span class="text-muted">• {{ analysis.square_meters }} m²</span>
-                                {% endif %}
-                                {% if analysis.investment_score %}
-                                <span class="text-muted">• Score: {{ analysis.investment_score }}/100</span>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" 
-                                   class="btn btn-outline-primary btn-sm">
-                                    View Details
-                                </a>
+                        <div>
+                            <h1 class="display-5 fw-bold mb-2 text-white">
+                                {{ user.first_name|default:user.username }}
+                            </h1>
+                            <p class="text-white-75 mb-3">
+                                {{ user.email }}
+                            </p>
+                            
+                            <!-- Tier Badge -->
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-30">
+                                    {{ user.profile.subscription_tier|title|default:"Free" }} Plan
+                                </span>
+                                <span class="text-white-75 small">
+                                    Member since {{ user.date_joined|date:"M Y" }}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
+                </div>
+                
+                <div class="col-lg-4 text-center">
+                    <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-outline-light">
+                        <i class="bi bi-plus-lg me-2"></i>
+                        New Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Settings Sidebar -->
+        <div class="col-lg-4">
+            <!-- Account Information -->
+            <div class="card fade-in mb-4">
+                <div class="card-body">
+                    <h3 class="h5 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-person"></i>
+                        Account Information
+                    </h3>
+                    
+                    <div class="d-flex flex-column gap-3">
+                        <div class="p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Username</div>
+                                    <div class="fw-semibold">{{ user.username }}</div>
+                                </div>
+                                <i class="bi bi-person text-muted"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Email Address</div>
+                                    <div class="fw-semibold">{{ user.email }}</div>
+                                </div>
+                                <i class="bi bi-envelope text-muted"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Account Type</div>
+                                    <span class="badge bg-{% if user.profile.subscription_tier == 'premium' %}success{% elif user.profile.subscription_tier == 'basic' %}primary{% else %}warning{% endif %}">
+                                        {{ user.profile.subscription_tier|title|default:"Free" }}
+                                    </span>
+                                </div>
+                                <i class="bi bi-star text-muted"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Member Since</div>
+                                    <div class="fw-semibold">{{ user.date_joined|date:"F j, Y" }}</div>
+                                </div>
+                                <i class="bi bi-calendar text-muted"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Status -->
+            <div class="card {% if user.profile.subscription_tier == 'free' %}border-warning border-opacity-25 bg-warning bg-opacity-5{% elif user.profile.subscription_tier == 'basic' %}border-primary border-opacity-25 bg-primary bg-opacity-5{% else %}border-success border-opacity-25 bg-success bg-opacity-5{% endif %} fade-in mb-4" style="animation-delay: 0.1s;">
+                <div class="card-body">
+                    <h3 class="h5 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-credit-card"></i>
+                        Subscription Status
+                    </h3>
+                    
+                    {% if user.profile.subscription_tier == 'free' %}
+                        <!-- Free Plan -->
+                        <div class="text-center mb-4">
+                            <div class="h1 fw-bold text-warning mb-2">
+                                {{ user.profile.remaining_analyses|default:1 }}
+                            </div>
+                            <div class="text-muted small">Analysis remaining this month</div>
+                        </div>
+                        
+                        <div class="alert alert-warning mb-4">
+                            <h4 class="h6 mb-3">🚀 Upgrade Benefits:</h4>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span><strong>Basic (€5/month):</strong> 10 analyses/month</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span><strong>Premium (€15/month):</strong> Unlimited analyses</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Priority support & advanced insights</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="#upgrade-basic" class="btn btn-warning flex-fill">
+                                Upgrade to Basic
+                            </a>
+                            <a href="#upgrade-premium" class="btn btn-primary flex-fill">
+                                Go Premium
+                            </a>
+                        </div>
+                    
+                    {% elif user.profile.subscription_tier == 'basic' %}
+                        <!-- Basic Plan -->
+                        <div class="text-center mb-4">
+                            <div class="h1 fw-bold text-primary mb-2">
+                                {{ user.profile.remaining_analyses|default:10 }}
+                            </div>
+                            <div class="text-muted small">Analyses remaining this month</div>
+                        </div>
+                        
+                        <div class="alert alert-info mb-4">
+                            <h4 class="h6 mb-3">🎯 Premium Benefits:</h4>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Unlimited property analyses</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Advanced market insights</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Priority customer support</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="#upgrade-premium" class="btn btn-primary w-100">
+                            Upgrade to Premium - €15/month
+                        </a>
+                    
                     {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
-                        <h5>No Property Analyses Yet</h5>
-                        <p class="text-muted">Start analyzing Albanian properties to get AI-powered investment insights.</p>
-                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Analyze Your First Property
+                        <!-- Premium Plan -->
+                        <div class="text-center mb-4">
+                            <div class="h1 fw-bold text-success mb-2">
+                                ∞
+                            </div>
+                            <div class="text-muted small">Unlimited analyses</div>
+                        </div>
+                        
+                        <div class="alert alert-success mb-4">
+                            <h4 class="h6 mb-3">👑 Premium Features Active:</h4>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Unlimited property analyses</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Advanced market insights</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    <span>Priority customer support</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-success bg-opacity-10 rounded text-success">
+                            <div class="h2 mb-2">🎉</div>
+                            <div class="fw-semibold mb-1">You're all set!</div>
+                            <div class="small opacity-75">Enjoying all Premium features</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card fade-in mb-4" style="animation-delay: 0.2s;">
+                <div class="card-body">
+                    <h3 class="h5 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-gear"></i>
+                        Account Settings
+                    </h3>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="{% url 'accounts:password_reset' %}" class="btn btn-outline-secondary text-start">
+                            <i class="bi bi-lock me-2"></i>
+                            Change Password
+                        </a>
+                        
+                        <hr class="my-3">
+                        
+                        <a href="{% url 'accounts:delete_profile_confirm' %}" class="btn btn-outline-danger text-start">
+                            <i class="bi bi-trash me-2"></i>
+                            Delete Account
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-lg-8">
+            <!-- Usage Statistics -->
+            <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
+                <div class="card-body">
+                    <h2 class="h4 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-graph-up"></i>
+                        Usage Statistics
+                    </h2>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h2 fw-bold text-primary mb-2">{{ user.total_analyses|default:0 }}</div>
+                                <div class="text-muted small">Total Analyses</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h2 fw-bold text-primary mb-2">{{ user.this_month_analyses|default:0 }}</div>
+                                <div class="text-muted small">This Month</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h2 fw-bold text-primary mb-2">{{ user.strong_buys|default:0 }}</div>
+                                <div class="text-muted small">Strong Buys</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <h3 class="h5 mb-4">Recent Activity</h3>
+                    {% if analyses %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for analysis in analyses|slice:":5" %}
+                            <div class="p-4 border rounded {% if not analysis.is_active %}opacity-75 border-warning border-start border-warning border-4{% endif %}">
+                                <div class="row align-items-start mb-3">
+                                    <div class="col">
+                                        <h4 class="h6 mb-2">
+                                            {{ analysis.property_title|truncatechars:50 }}
+                                        </h4>
+                                        <p class="text-muted small mb-2">
+                                            <i class="bi bi-geo-alt me-1"></i>
+                                            {{ analysis.property_location }}
+                                            {% if analysis.neighborhood %} • {{ analysis.neighborhood }}{% endif %}
+                                        </p>
+                                        <div class="small text-muted">
+                                            {{ analysis.created_at|date:"M j, Y" }} • {{ analysis.created_at|timesince }} ago
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-auto text-end">
+                                        {% if analysis.investment_score %}
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white small mx-auto mb-2" style="width: 50px; height: 50px; background: {% if analysis.investment_score >= 80 %}var(--bs-success){% elif analysis.investment_score >= 60 %}var(--bs-primary){% else %}var(--bs-warning){% endif %};">
+                                                {{ analysis.investment_score }}
+                                            </div>
+                                        {% endif %}
+                                        <span class="badge bg-{% if analysis.status == 'completed' %}success{% elif analysis.status == 'analyzing' %}warning{% else %}danger{% endif %}">
+                                            {{ analysis.status|title }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="fw-bold text-primary h5 mb-0">
+                                            €{{ analysis.asking_price|floatformat:0 }}
+                                        </span>
+                                        {% if analysis.usable_area %}
+                                            <span class="text-muted small ms-2">
+                                                • {{ analysis.usable_area }}m²
+                                            </span>
+                                        {% endif %}
+                                        {% if analysis.price_per_sqm %}
+                                            <span class="text-muted small">
+                                                • €{{ analysis.price_per_sqm|floatformat:0 }}/m²
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <a href="{% url 'property_ai:analysis_detail' analysis_id=analysis.id %}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-eye me-1"></i>
+                                            View
+                                        </a>
+                                        {% if analysis.report_generated %}
+                                            <a href="{% url 'property_ai:download_report' analysis_id=analysis.id %}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-file-earmark-text me-1"></i>
+                                                PDF
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <a href="{% url 'property_ai:my_analyses' %}" class="btn btn-outline-secondary">
+                                View All Analyses
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 bg-light rounded">
+                            <div class="display-1 mb-4 opacity-50">🏢</div>
+                            <h3 class="h5 mb-3">No Property Analyses Yet</h3>
+                            <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">
+                                Start analyzing Albanian properties to see your investment insights and track your portfolio here.
+                            </p>
+                            <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-plus-lg me-2"></i>
+                                Analyze Your First Property
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

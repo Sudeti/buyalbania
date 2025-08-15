@@ -435,27 +435,70 @@ class Century21AlbaniaScraper:
         return None
     
     def _extract_location(self, text):
-        """Extract location - MORE FLEXIBLE"""
-        # Main Albanian cities and areas
-        locations = [
-            'Tirana', 'Tiranë', 'Durrës', 'Durres', 'Vlorë', 'Vlore', 
-            'Shkodër', 'Shkoder', 'Paskuqan', 'Elbasan', 'Kamëz', 'Kamez',
-            'Fier', 'Korçë', 'Korce', 'Kavajë', 'Kavaje', 'Lezhë', 'Lezhe'
+        """Extract location - IMPROVED WITH BETTER PRIORITY"""
+        # Method 1: Look for location in title/header first (most accurate)
+        title_location_patterns = [
+            r'([A-Za-zë\s]+),\s*(Vlorë|Vlore|Tirana|Tiranë|Durrës|Durres|Shkodër|Shkoder)',  # Rradhimë, Vlorë
+            r'([A-Za-zë\s]+)\s+(Vlorë|Vlore|Tirana|Tiranë|Durrës|Durres|Shkodër|Shkoder)',   # Rradhimë Vlorë
+            r'(Vlorë|Vlore|Tirana|Tiranë|Durrës|Durres|Shkodër|Shkoder)\s+Albania',        # Vlorë Albania
+        ]
+        
+        for pattern in title_location_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                # Extract the main city from the match
+                for group in match.groups():
+                    if group and group.lower() in ['vlorë', 'vlore', 'tirana', 'tiranë', 'durrës', 'durres', 'shkodër', 'shkoder']:
+                        location = self._normalize_location_name(group)
+                        logger.info(f"✅ Found location in title: {location}")
+                        return location
+        
+        # Method 2: Look for specific location patterns in property info
+        property_location_patterns = [
+            r'në\s+([A-Za-zë\s]+),\s*(Vlorë|Vlore|Tirana|Tiranë|Durrës|Durres)',  # në Rradhimë, Vlorë
+            r'në\s+(Vlorë|Vlore|Tirana|Tiranë|Durrës|Durres)',                   # në Vlorë
+        ]
+        
+        for pattern in property_location_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                for group in match.groups():
+                    if group and group.lower() in ['vlorë', 'vlore', 'tirana', 'tiranë', 'durrës', 'durres', 'shkodër', 'shkoder']:
+                        location = self._normalize_location_name(group)
+                        logger.info(f"✅ Found location in property info: {location}")
+                        return location
+        
+        # Method 3: Fallback to simple keyword search (but with better priority)
+        # Check for main cities in order of importance/commonality
+        main_cities = [
+            ('Vlorë', 'Vlore'), ('Tirana', 'Tiranë'), ('Durrës', 'Durres'), 
+            ('Shkodër', 'Shkoder'), ('Fier',), ('Korçë', 'Korce')
         ]
         
         text_lower = text.lower()
-        for location in locations:
-            if location.lower() in text_lower:
-                return location
-        
-        # Look for patterns like "në [Location]"
-        location_match = re.search(r'në\s+([A-Za-zë\s]+)', text, re.IGNORECASE)
-        if location_match:
-            potential_location = location_match.group(1).strip()
-            if 3 < len(potential_location) < 20:  # Reasonable length
-                return potential_location.title()
+        for city_group in main_cities:
+            for city in city_group:
+                if city.lower() in text_lower:
+                    location = self._normalize_location_name(city)
+                    logger.info(f"✅ Found location via keyword search: {location}")
+                    return location
         
         return "Albania"
+    
+    def _normalize_location_name(self, location):
+        """Normalize location names to standard format"""
+        location_lower = location.lower().strip()
+        
+        # Map variations to standard names
+        location_map = {
+            'vlore': 'Vlorë',
+            'tirane': 'Tirana', 
+            'durres': 'Durrës',
+            'shkoder': 'Shkodër',
+            'korce': 'Korçë',
+        }
+        
+        return location_map.get(location_lower, location.title())
     
     def _extract_neighborhood(self, text):
         """Extract neighborhood/district information - EXPANDED"""
@@ -496,20 +539,48 @@ class Century21AlbaniaScraper:
         return None  # Return None for nullable field
 
     def _extract_type(self, text):
-        """Extract property type - IMPROVED"""
+        """Extract property type - IMPROVED WITH BETTER PRIORITY"""
         text_lower = text.lower()
         
-        # Check in order of specificity
-        if any(word in text_lower for word in ['dyqan', 'magazinë', 'magazine', 'komercial', 'biznesi']):
-            return 'commercial'
-        elif any(word in text_lower for word in ['zyre', 'office', 'zyra']):
-            return 'office'
-        elif any(word in text_lower for word in ['villa', 'vilë', 'shtëpi', 'shtepi', 'house']):
-            return 'villa'
-        elif 'apartament' in text_lower:
+        # Method 1: Look for "Lloji" (Type) field first - MOST ACCURATE
+        lloji_patterns = [
+            r'lloji\s*:\s*([a-zA-Zë\s]+)',  # Lloji: Apartament
+            r'lloji\s+([a-zA-Zë\s]+)',      # Lloji Apartament
+            r'type\s*:\s*([a-zA-Zë\s]+)',   # Type: Apartment
+            r'type\s+([a-zA-Zë\s]+)',       # Type Apartment
+        ]
+        
+        for pattern in lloji_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                property_type = match.group(1).strip().lower()
+                logger.info(f"✅ Found property type from Lloji field: {property_type}")
+                
+                # Map Albanian types to our categories
+                if 'apartament' in property_type:
+                    return 'apartment'
+                elif 'studio' in property_type:
+                    return 'studio'
+                elif any(word in property_type for word in ['villa', 'vilë', 'shtëpi', 'shtepi']):
+                    return 'villa'
+                elif any(word in property_type for word in ['dyqan', 'magazinë', 'komercial']):
+                    return 'commercial'
+                elif any(word in property_type for word in ['zyre', 'office']):
+                    return 'office'
+                elif any(word in property_type for word in ['truall', 'toke']):
+                    return 'land'
+        
+        # Method 2: Fallback to keyword search if no Lloji field found
+        if 'apartament' in text_lower:
             return 'apartment'
         elif 'studio' in text_lower:
             return 'studio'
+        elif any(word in text_lower for word in ['villa', 'vilë', 'shtëpi', 'shtepi', 'house']):
+            return 'villa'
+        elif any(word in text_lower for word in ['dyqan', 'magazinë', 'magazine', 'komercial', 'biznesi']):
+            return 'commercial'
+        elif any(phrase in text_lower for phrase in ['zyra pune', 'office space', 'zyre pune', 'biznes zyre']):
+            return 'office'
         elif any(word in text_lower for word in ['truall', 'toke', 'land']):
             return 'land'
         

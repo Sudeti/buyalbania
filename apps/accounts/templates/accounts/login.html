@@ -1,151 +1,100 @@
+<!-- ENHANCED: Premium login.html -->
 {% extends 'property_ai/base.html' %}
-{% load static %}
 
-{% block title %}Login{% endblock %}
-
-{% block extra_css %}
-<style>
-    .login-container {
-        max-width: 450px;
-        margin: 50px auto;
-        background-color: #fff;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        padding: 30px;
-    }
-    
-    .login-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    
-    .login-header h1 {
-        color: #3d5a80;
-        font-weight: 700;
-    }
-    
-    .login-form .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .login-form label {
-        color: #3d5a80;
-        font-weight: 600;
-    }
-    
-    .login-form .form-control {
-        height: 48px;
-        border-radius: 5px;
-        border: 1px solid #e0e0e0;
-        padding: 10px 15px;
-    }
-    
-    .login-btn {
-        background-color: #3d5a80;
-        color: white;
-        height: 48px;
-        font-weight: 600;
-        border-radius: 5px;
-        width: 100%;
-        margin-top: 10px;
-    }
-    
-    .login-btn:hover {
-        background-color: #2c3e50;
-    }
-    
-    .login-links {
-        margin-top: 20px;
-        text-align: center;
-    }
-    
-    .login-links a {
-        color: #3d5a80;
-        font-weight: 500;
-        text-decoration: none;
-    }
-    
-    .login-links a:hover {
-        text-decoration: underline;
-    }
-    
-    .login-social {
-        margin-top: 30px;
-        text-align: center;
-    }
-    
-    .login-social .btn {
-        margin: 10px 5px;
-    }
-    
-    .error-feedback {
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 5px;
-    }
-    
-    .messages {
-        margin-bottom: 20px;
-    }
-    
-    .alert {
-        padding: 15px;
-        border-radius: 5px;
-        font-weight: 500;
-    }
-</style>
-{% endblock %}
+{% block title %}Sign In - PropertyAI{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Welcome Back</h1>
-            <p>Sign in to access your personalized vacation recommendations</p>
+<div class="container section">
+    <div style="max-width: 450px; margin: 0 auto;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: var(--space-2xl);" class="fade-in">
+            <h1 class="text-display text-3xl" style="margin-bottom: var(--space-sm);">
+                Welcome Back
+            </h1>
+            <p style="color: var(--text-secondary); font-size: var(--text-lg);">
+                Sign in to access your property analysis dashboard
+            </p>
         </div>
         
-        {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                {{ message }}
+        <!-- Login Card -->
+        <div class="card card-highlight slide-up">
+            <form method="post" class="stack">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        Username or Email
+                    </label>
+                    <input type="text" 
+                           id="{{ form.username.id_for_label }}" 
+                           name="username" 
+                           class="form-input"
+                           placeholder="Enter your username"
+                           value="{{ form.username.value|default:'' }}"
+                           required>
+                    {% if form.username.errors %}
+                        <div style="color: var(--error); font-size: var(--text-sm); margin-top: var(--space-xs);">
+                            {{ form.username.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        Password
+                    </label>
+                    <input type="password" 
+                           id="{{ form.password.id_for_label }}" 
+                           name="password" 
+                           class="form-input"
+                           placeholder="Enter your password"
+                           required>
+                    {% if form.password.errors %}
+                        <div style="color: var(--error); font-size: var(--text-sm); margin-top: var(--space-xs);">
+                            {{ form.password.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    <span>Sign In</span>
+                    <span style="font-size: var(--text-lg);">→</span>
+                </button>
+                
+                <div style="text-align: center; font-size: var(--text-sm);">
+                    <a href="{% url 'accounts:password_reset' %}" style="color: var(--primary-600); text-decoration: none;">
+                        Forgot password?
+                    </a>
+                    <span style="color: var(--text-tertiary); margin: 0 var(--space-sm);">•</span>
+                    <a href="{% url 'accounts:register' %}" style="color: var(--primary-600); text-decoration: none;">
+                        Create account
+                    </a>
+                </div>
+            </form>
+            
+            <!-- Social Login -->
+            <div style="margin-top: var(--space-xl);">
+                <div style="position: relative; text-align: center; margin-bottom: var(--space-lg);">
+                    <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border);"></div>
+                    <span style="background: var(--surface); padding: 0 var(--space-md); color: var(--text-secondary); font-size: var(--text-sm);">
+                        or continue with
+                    </span>
+                </div>
+                
+                <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-secondary" style="width: 100%;">
+                    <span style="color: #4285F4; font-size: var(--text-lg);">📧</span>
+                    Continue with Google
+                </a>
             </div>
-            {% endfor %}
         </div>
-        {% endif %}
         
-        <form method="post" class="login-form">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="{{ form.username.id_for_label }}">Username</label>
-                {{ form.username }}
-                {% if form.username.errors %}
-                <div class="error-feedback">{{ form.username.errors }}</div>
-                {% endif %}
+        <!-- Sign Up CTA -->
+        <div class="card" style="margin-top: var(--space-lg); text-align: center;">
+            <div style="color: var(--text-secondary); margin-bottom: var(--space-md);">
+                Don't have an account?
             </div>
-            
-            <div class="form-group">
-                <label for="{{ form.password.id_for_label }}">Password</label>
-                {{ form.password }}
-                {% if form.password.errors %}
-                <div class="error-feedback">{{ form.password.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <button type="submit" class="btn login-btn">Sign In</button>
-            
-            <div class="login-links">
-                <a href="{% url 'accounts:password_reset' %}">Forgot password?</a>
-                <span class="mx-2">|</span>
-                <a href="{% url 'accounts:register' %}">Create account</a>
-            </div>
-        </form>
-        
-        <div class="login-social">
-            <p>Or sign in with</p>
-            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-outline-secondary">
-                <i class="fab fa-google me-2"></i>Google
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg" style="width: 100%;">
+                Create Free Account
             </a>
         </div>
     </div>

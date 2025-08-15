@@ -61,11 +61,22 @@ def analyze_property(request):
         property_url=property_url, 
         user=request.user
     ).first()
-    
+
     if existing_user_analysis:
-        messages.info(request, 'You have already analyzed this property.')
-        return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
-    
+        if existing_user_analysis.status == 'completed':
+            messages.info(request, 'You have already analyzed this property.')
+            return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
+        elif existing_user_analysis.status == 'failed':
+            # Allow retry of failed analysis
+            messages.info(request, 'Retrying failed analysis...')
+            existing_user_analysis.status = 'analyzing'  # Reset status
+            existing_user_analysis.save()
+            analysis = existing_user_analysis  # Reuse the existing record
+            # Skip the creation step and go directly to AI analysis
+        elif existing_user_analysis.status == 'analyzing':
+            messages.warning(request, 'Analysis already in progress. Please wait.')
+            return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
+        
     # Check if property exists globally (but user can't see others' analyses)
     existing_global_analysis = PropertyAnalysis.objects.filter(property_url=property_url).first()
     
@@ -127,7 +138,7 @@ def analyze_property(request):
             analysis.delete()  # Clean up
             return redirect('property_ai:analyze_property')
         
-        # Run AI analysis
+        # Run AI analysis with enhanced analytics
         ai = PropertyAI()
         comparable_properties = get_comparable_properties(analysis)
         
@@ -142,13 +153,22 @@ def analyze_property(request):
             'floor_level': analysis.floor_level,
         }
         
-        result = ai.analyze_property(analysis_data, comparable_properties)
+        # Pass the property_analysis object for enhanced analytics
+        result = ai.analyze_property(analysis_data, comparable_properties, property_analysis=analysis)
         
         if result.get('status') == 'success':
             analysis.analysis_result = result
             analysis.ai_summary = result.get('summary', '')
             analysis.investment_score = result.get('investment_score')
             analysis.recommendation = result.get('recommendation')
+            
+            # Store enhanced analytics data
+            analysis.market_opportunity_score = result.get('market_opportunity_score')
+            analysis.price_percentile = result.get('price_analysis', {}).get('price_percentile')
+            analysis.market_position_percentage = result.get('price_analysis', {}).get('market_position_percentage')
+            analysis.negotiation_leverage = result.get('negotiation_leverage')
+            analysis.market_sentiment = result.get('market_insights', [])
+            
             analysis.status = 'completed'
             analysis.save()
             
@@ -181,20 +201,36 @@ def my_analyses(request):
     # ALL TIERS: Show only user's own analyses
     analyses = PropertyAnalysis.objects.filter(user=request.user).order_by('-created_at')
     
-    # Calculate stats
+    # Calculate enhanced stats
     completed_analyses = analyses.filter(status='completed')
     stats = {
         'total': analyses.count(),
         'completed': completed_analyses.count(),
         'avg_score': completed_analyses.aggregate(avg=Avg('investment_score'))['avg'],
         'strong_buys': completed_analyses.filter(investment_score__gte=80).count(),
+        'avg_opportunity_score': completed_analyses.aggregate(avg=Avg('market_opportunity_score'))['avg'],
+        'high_leverage_count': completed_analyses.filter(negotiation_leverage='high').count(),
+        'below_market_count': completed_analyses.filter(market_position_percentage__lt=0).count(),
     }
+    
+    # Get portfolio analytics
+    from ..analytics import PropertyAnalytics
+    analytics = PropertyAnalytics()
+    
+    portfolio_analytics = {}
+    if completed_analyses.exists():
+        # Get unique locations from user's analyses
+        locations = completed_analyses.values_list('property_location', flat=True).distinct()
+        if locations:
+            # Get market summary for user's portfolio
+            portfolio_analytics = analytics.get_market_summary()
     
     context = {
         'analyses': analyses[:50],
         'user_tier': profile.subscription_tier,
         'remaining_analyses': profile.remaining_analyses,
         'stats': stats,
+        'portfolio_analytics': portfolio_analytics,
     }
     return render(request, 'property_ai/my_analyses.html', context)
 
@@ -268,11 +304,27 @@ def analysis_detail(request, analysis_id):
     else:
         similar_properties = []
     
+    # Get enhanced analytics data
+    from ..analytics import PropertyAnalytics
+    analytics = PropertyAnalytics()
+    
+    market_analytics = {}
+    if analysis.status == 'completed':
+        location = analysis.property_location.split(',')[0]
+        market_analytics = {
+            'market_stats': analytics.get_location_market_stats(location, analysis.property_type),
+            'comparable_analysis': analytics.get_comparable_analysis(analysis),
+            'opportunity_analysis': analytics.get_market_opportunity_score(analysis),
+            'negotiation_insights': analytics.get_negotiation_insights(analysis),
+            'price_trends': analytics.get_price_trends(location, analysis.property_type, months=6)
+        }
+    
     context = {
         'analysis': analysis,
         'property_analysis': analysis,  # For template compatibility
         'similar_properties': similar_properties,
         'show_comparison': len(similar_properties) > 0,
+        'market_analytics': market_analytics,
     }
     
     return render(request, 'property_ai/analysis_detail.html', context)
