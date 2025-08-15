@@ -143,6 +143,7 @@ class Century21AlbaniaScraper:
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agent',        # Name before Agent
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?LicensÃ«',      # Name before License
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agjent',       # Name before Agjent - NEW
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@century21atrium\.com',
             
             # Even simpler patterns
             r'([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\s*\n',      # Two capitalized words followed by newline
@@ -191,6 +192,7 @@ class Century21AlbaniaScraper:
         email_patterns = [
             r'([a-zA-Z0-9._%+-]+@c21cpm\.al)',     # Century21 emails first
             r'([a-zA-Z0-9._%+-]+@c21roy\.al)', 
+            r'([a-zA-Z0-9._%+-]+@century21atrium\.com)',
             r'([a-zA-Z0-9._%+-]+@gmail\.com)',     # Gmail emails
             r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',  # Any email
         ]
