@@ -61,12 +61,21 @@ def analyze_property(request):
             messages.info(request, 'You have already analyzed this property.')
             return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
         elif existing_user_analysis.status == 'failed':
-            # Allow retry of failed analysis
+            # Allow retry of failed analysis - but need to check quota first
+            if not profile.can_analyze_property():
+                logger.debug(f"User {request.user.username} quota exceeded for retry. Tier: {profile.subscription_tier}, Used: {profile.monthly_analyses_used}")
+                tier_info = {
+                    'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€5) for 10 analyses per month!',
+                    'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€15) for unlimited analyses!',
+                }
+                messages.error(request, tier_info.get(profile.subscription_tier, 'Analysis quota exceeded.'))
+                return redirect('property_ai:analyze_property')
+            
             messages.info(request, 'Retrying failed analysis...')
             existing_user_analysis.status = 'analyzing'  # Reset status
             existing_user_analysis.save()
             analysis = existing_user_analysis  # Reuse the existing record
-            # Skip the creation step and go directly to AI analysis
+            # Continue with the analysis flow below
         elif existing_user_analysis.status == 'analyzing':
             messages.warning(request, 'Analysis already in progress. Please wait.')
             return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
@@ -108,10 +117,17 @@ def analyze_property(request):
     
     try:
         logger.debug(f"Starting analysis process for {request.user.username}")
-        # If property exists globally but analysis is incomplete, update the existing record
-        if existing_global_analysis:
+        
+        # Check if we're retrying a failed analysis
+        is_retry = existing_user_analysis and existing_user_analysis.status == 'analyzing'
+        
+        if is_retry:
+            # We're retrying - use the existing analysis object
+            analysis = existing_user_analysis
+            logger.debug(f"Retrying analysis for {request.user.username}")
+        elif existing_global_analysis:
+            # If property exists globally but analysis is incomplete, update the existing record
             logger.debug(f"Updating existing global analysis for {request.user.username}")
-            # Update the existing analysis record
             analysis = existing_global_analysis
             analysis.user = request.user  # Set the current user as the requester
             analysis.status = 'analyzing'
@@ -119,8 +135,8 @@ def analyze_property(request):
             
             messages.info(request, 'Using existing property data. Running your personalized analysis...')
         else:
+            # Create new analysis by scraping property data
             logger.debug(f"Scraping new property data for {request.user.username}")
-            # Scrape new property
             try:
                 scraper = Century21AlbaniaScraper()
                 property_data = scraper.scrape_property(property_url)
@@ -220,9 +236,10 @@ def analyze_property(request):
             result = ai.analyze_property(analysis_data, comparable_properties, property_analysis=analysis)
         except Exception as e:
             logger.error(f"Error in AI analysis: {e}")
-            result = {"status": "error", "message": str(e)}
+            result = {"status": "error", "message": f"AI analysis failed: {str(e)}"}
         
         logger.debug(f"AI analysis result for {request.user.username}: {result.get('status')}")
+        logger.debug(f"AI analysis details: {result}")
         
         if result.get('status') == 'success':
             logger.debug(f"AI analysis successful for {request.user.username}")
@@ -291,11 +308,22 @@ def analyze_property(request):
                 analysis.save()
                 return redirect('property_ai:analyze_property')
         else:
-            logger.error(f"AI analysis failed for {request.user.username}: {result.get('message', 'Unknown error')}")
+            error_message = result.get('message', 'Unknown error')
+            logger.error(f"AI analysis failed for {request.user.username}: {error_message}")
             try:
                 analysis.status = 'failed'
                 analysis.save()
-                messages.error(request, 'Analysis failed. Your quota has not been consumed.')
+                
+                # Provide more specific error messages
+                if 'timeout' in error_message.lower():
+                    messages.error(request, 'Analysis timed out. Please try again.')
+                elif 'api' in error_message.lower():
+                    messages.error(request, 'AI service temporarily unavailable. Please try again.')
+                elif 'quota' in error_message.lower():
+                    messages.error(request, 'AI service quota exceeded. Please try again later.')
+                else:
+                    messages.error(request, f'Analysis failed: {error_message}')
+                
                 # Refund the quota since analysis failed
                 profile.monthly_analyses_used = max(0, profile.monthly_analyses_used - 1)
                 profile.save()

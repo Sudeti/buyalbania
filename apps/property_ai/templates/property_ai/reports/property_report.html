@@ -2,66 +2,172 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Property Analysis Report</title>
+    <title>Property Investment Analysis Report</title>
 </head>
 <body>
-    <div class="cover-page">
-        <h1>Property Investment Analysis</h1>
-        <h2>{{ property_analysis.property_title }}</h2>
-        <p>Location: {{ property_analysis.property_location }}</p>
-        <p>Report ID: {{ report_id }}</p>
-        <p>Generated: {{ generation_date|date:"F d, Y" }}</p>
+    <!-- Page 1: Cover & Executive Summary -->
+    <div class="page-1">
+        <!-- Header with Logo -->
+        <div class="report-header">
+            <div class="logo-section">
+                <div class="logo">AI Property Analysis</div>
+                <div class="tagline">Professional Investment Insights</div>
+            </div>
+            <div class="report-meta">
+                <div class="report-id">Report #{{ report_id }}</div>
+                <div class="date">{{ generation_date|date:"M d, Y" }}</div>
+            </div>
+        </div>
+
+        <!-- Property Title & Location -->
+        <div class="property-header">
+            <h1 class="property-title">{{ property_analysis.property_title|default:"Property Analysis" }}</h1>
+            <div class="property-location">
+                <i class="location-icon">📍</i>
+                {{ property_analysis.property_location|default:"Location not specified" }}
+            </div>
+        </div>
+
+        <!-- Investment Score & Recommendation -->
+        <div class="investment-summary">
+            <div class="score-card">
+                <div class="score-label">Investment Score</div>
+                <div class="score-value">{{ investment_score|default:85 }}</div>
+                <div class="score-max">/ 100</div>
+            </div>
+            <div class="recommendation-card">
+                <div class="recommendation-label">Recommendation</div>
+                <div class="recommendation-value {{ recommendation|lower }}">{{ recommendation|default:"BUY"|upper }}</div>
+            </div>
+        </div>
+
+        <!-- Key Metrics Grid -->
+        <div class="key-metrics">
+            <div class="metric-card">
+                <div class="metric-value">€{{ property_analysis.asking_price|default:"N/A"|floatformat:0 }}</div>
+                <div class="metric-label">Asking Price</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ property_analysis.square_meters|default:"N/A" }} m²</div>
+                <div class="metric-label">Size</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ property_analysis.bedrooms|default:"N/A" }}</div>
+                <div class="metric-label">Bedrooms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{{ property_analysis.bathrooms|default:"N/A" }}</div>
+                <div class="metric-label">Bathrooms</div>
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="executive-summary">
+            <h2>Executive Summary</h2>
+            <p>{{ summary|default:"This property presents a compelling investment opportunity with strong fundamentals and favorable market positioning." }}</p>
+        </div>
+
+        <!-- Price Analysis -->
+        {% if price_analysis %}
+        <div class="price-analysis">
+            <h2>Price Analysis</h2>
+            <div class="price-metrics">
+                <div class="price-metric">
+                    <span class="metric-name">Price per m²:</span>
+                    <span class="metric-value">€{{ price_analysis.price_per_sqm|default:"N/A" }}</span>
+                </div>
+                <div class="price-metric">
+                    <span class="metric-name">Market Average:</span>
+                    <span class="metric-value">€{{ price_analysis.market_average_per_sqm|default:"N/A" }}</span>
+                </div>
+                <div class="price-metric">
+                    <span class="metric-name">Fair Value:</span>
+                    <span class="metric-value">€{{ price_analysis.fair_value_estimate|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <h1>Investment Summary</h1>
-    <div class="score-section">
-        <div class="investment-score">{{ investment_score|default:85 }}</div>
-        <div class="recommendation">{{ recommendation|default:"Buy"|title }}</div>
-    </div>
+    <!-- Page 2: Detailed Analysis -->
+    <div class="page-2">
+        <!-- Rental Analysis -->
+        {% if rental_analysis %}
+        <div class="rental-analysis">
+            <h2>Rental Analysis</h2>
+            <div class="rental-metrics">
+                <div class="rental-metric">
+                    <div class="metric-value">€{{ rental_analysis.estimated_monthly_rent|default:"N/A" }}</div>
+                    <div class="metric-label">Monthly Rent</div>
+                </div>
+                <div class="rental-metric">
+                    <div class="metric-value">{{ rental_analysis.annual_yield|default:"N/A" }}%</div>
+                    <div class="metric-label">Annual Yield</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-    <h2>Property Details</h2>
-    <p><strong>Price:</strong> €{{ property_analysis.asking_price }}</p>
-    <p><strong>Size:</strong> {{ property_analysis.square_meters }} m²</p>
-    <p><strong>Bedrooms:</strong> {{ property_analysis.bedrooms }}</p>
-    <p><strong>Bathrooms:</strong> {{ property_analysis.bathrooms }}</p>
+        <!-- Market Insights -->
+        {% if market_insights %}
+        <div class="market-insights">
+            <h2>Market Insights</h2>
+            <ul class="insights-list">
+                {% for insight in market_insights %}
+                <li>{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
 
-    <h2>Analysis Summary</h2>
-    <p>{{ summary }}</p>
+        <!-- Risk Assessment -->
+        {% if risk_factors %}
+        <div class="risk-assessment">
+            <h2>Risk Factors</h2>
+            <ul class="risk-list">
+                {% for risk in risk_factors %}
+                <li>{{ risk }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
 
-    {% if price_analysis %}
-    <h2>Price Analysis</h2>
-    <p><strong>Price per m²:</strong> €{{ price_analysis.price_per_sqm }}</p>
-    <p><strong>Market Average:</strong> €{{ price_analysis.market_average_per_sqm }}</p>
-    <p><strong>Fair Value:</strong> €{{ price_analysis.fair_value_estimate }}</p>
-    {% endif %}
+        <!-- Investment Highlights -->
+        <div class="investment-highlights">
+            <h2>Investment Highlights</h2>
+            <div class="highlights-grid">
+                <div class="highlight-item">
+                    <div class="highlight-icon">📈</div>
+                    <div class="highlight-text">Strong market fundamentals</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-icon">💰</div>
+                    <div class="highlight-text">Competitive pricing</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-icon">🏘️</div>
+                    <div class="highlight-text">Desirable location</div>
+                </div>
+                <div class="highlight-item">
+                    <div class="highlight-icon">📊</div>
+                    <div class="highlight-text">Positive cash flow potential</div>
+                </div>
+            </div>
+        </div>
 
-    {% if rental_analysis %}
-    <h2>Rental Analysis</h2>
-    <p><strong>Estimated Rent:</strong> €{{ rental_analysis.estimated_monthly_rent }}/month</p>
-    <p><strong>Annual Yield:</strong> {{ rental_analysis.annual_yield }}</p>
-    {% endif %}
-
-    {% if market_insights %}
-    <h2>Market Insights</h2>
-    <ul>
-    {% for insight in market_insights %}
-        <li>{{ insight }}</li>
-    {% endfor %}
-    </ul>
-    {% endif %}
-
-    {% if risk_factors %}
-    <h2>Risk Factors</h2>
-    <ul>
-    {% for risk in risk_factors %}
-        <li>{{ risk }}</li>
-    {% endfor %}
-    </ul>
-    {% endif %}
-
-    <div class="report-footer">
-        <p>Report generated on {{ generation_date|date:"F d, Y" }}</p>
-        <p>AI Property Analysis - Professional Investment Insights</p>
+        <!-- Footer -->
+        <div class="report-footer">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <div class="company-name">AI Property Analysis</div>
+                    <div class="contact-info">contact@aipropertyanalysis.com</div>
+                </div>
+                <div class="footer-right">
+                    <div class="report-info">Report generated on {{ generation_date|date:"F d, Y" }}</div>
+                    <div class="report-id-footer">ID: {{ report_id }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>

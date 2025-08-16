@@ -21,10 +21,17 @@ def download_report(request, analysis_id):
     
     if analysis.report_generated and analysis.report_file_path:
         if os.path.exists(analysis.report_file_path):
+            # Create a professional filename
+            property_title = analysis.property_title or "Property"
+            safe_title = "".join(c for c in property_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_title = safe_title.replace(' ', '_')[:30]  # Limit length
+            
+            filename = f"AI_Property_Analysis_{safe_title}_{analysis_id[:8]}.pdf"
+            
             return FileResponse(
                 open(analysis.report_file_path, 'rb'),
                 as_attachment=True,
-                filename=f"PropertyReport_{analysis_id[:8]}.pdf"
+                filename=filename
             )
     
     messages.error(request, 'Report not available for download.')
