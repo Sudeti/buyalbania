@@ -54,7 +54,7 @@ def download_report(request, analysis_id):
                 safe_title = "".join(c for c in property_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
                 safe_title = safe_title.replace(' ', '_')[:30]  # Limit length
                 
-                filename = f"AI_Property_Analysis_{safe_title}_{analysis_id[:8]}.pdf"
+                filename = f"AI_Property_Analysis_{safe_title}_{str(analysis_id)[:8]}.pdf"
                 logger.info(f"Generated filename: {filename}")
                 
                 try:
