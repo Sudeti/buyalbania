@@ -1,0 +1,231 @@
+{% extends 'property_ai/base.html' %}
+{% load static %}
+
+{% block title %}Analytics Dashboard - Property AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .locked-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .locked-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 3rem;
+        text-align: center;
+        max-width: 600px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .lock-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.8;
+    }
+    
+    .upgrade-benefits {
+        background: rgba(255,255,255,0.1);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem 0;
+        backdrop-filter: blur(10px);
+    }
+    
+    .benefit-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        text-align: left;
+    }
+    
+    .benefit-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .benefit-icon {
+        font-size: 1.5rem;
+        opacity: 0.8;
+    }
+    
+    .pricing-cards {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+    
+    .pricing-card {
+        background: rgba(255,255,255,0.95);
+        color: #333;
+        border-radius: 15px;
+        padding: 1.5rem;
+        min-width: 200px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease;
+    }
+    
+    .pricing-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .pricing-card.popular {
+        border: 2px solid #ffd700;
+        position: relative;
+    }
+    
+    .popular-badge {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffd700;
+        color: #333;
+        padding: 0.25rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .price {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 1rem 0;
+    }
+    
+    .price.basic { color: #667eea; }
+    .price.premium { color: #10b981; }
+    
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+        text-align: left;
+    }
+    
+    .feature-list li {
+        padding: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .feature-list li:before {
+        content: "✓";
+        color: #10b981;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="locked-container">
+        <div class="locked-card">
+            <div class="lock-icon">🔒</div>
+            
+            <h1 class="display-5 fw-bold mb-3">Data-Driven Analytics Dashboard</h1>
+            <p class="lead mb-4 opacity-75">
+                Unlock comprehensive market insights, portfolio analytics, and data-driven investment recommendations
+            </p>
+            
+            <div class="upgrade-benefits">
+                <h3 class="h5 mb-3">🚀 What You'll Get:</h3>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">📊</div>
+                    <div>
+                        <strong>Portfolio Analytics</strong><br>
+                        <small class="opacity-75">Track your investment performance and market insights</small>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">📈</div>
+                    <div>
+                        <strong>Market Trends</strong><br>
+                        <small class="opacity-75">Real-time market data and price trend analysis</small>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">🎯</div>
+                    <div>
+                        <strong>Data-Driven Investment Opportunities</strong><br>
+                        <small class="opacity-75">Identify high-leverage properties and below-market deals based on real data</small>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">📍</div>
+                    <div>
+                        <strong>Location Analysis</strong><br>
+                        <small class="opacity-75">Compare performance across different neighborhoods</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pricing-cards">
+                {% for plan in subscription_plans %}
+                    {% if plan.tier == 'basic' %}
+                        <div class="pricing-card popular">
+                            <div class="popular-badge">Most Popular</div>
+                            <h4 class="h5 mb-2">{{ plan.name }}</h4>
+                            <div class="price basic">€{{ plan.price_monthly }}</div>
+                            <div class="text-muted small mb-3">per month</div>
+                            
+                            <ul class="feature-list">
+                                <li>{{ plan.analyses_per_month }} analyses/month</li>
+                                <li>Portfolio Analytics</li>
+                                <li>Market Insights</li>
+                                <li>PDF Reports</li>
+                                <li>Property Alerts</li>
+                            </ul>
+                            
+                            <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-primary w-100">
+                                Upgrade to Basic
+                            </a>
+                        </div>
+                    {% elif plan.tier == 'premium' %}
+                        <div class="pricing-card">
+                            <h4 class="h5 mb-2">{{ plan.name }}</h4>
+                            <div class="price premium">€{{ plan.price_monthly }}</div>
+                            <div class="text-muted small mb-3">per month</div>
+                            
+                            <ul class="feature-list">
+                                <li>Unlimited analyses</li>
+                                <li>Advanced Analytics</li>
+                                <li>Priority Support</li>
+                                <li>All Basic Features</li>
+                                <li>Market Predictions</li>
+                            </ul>
+                            
+                            <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-success w-100">
+                                Go Premium
+                            </a>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4">
+                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-outline-light me-2">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Continue with Free Analysis
+                </a>
+                <a href="{% url 'property_ai:my_analyses' %}" class="btn btn-outline-light">
+                    <i class="bi bi-list-ul me-2"></i>
+                    View My Analyses
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

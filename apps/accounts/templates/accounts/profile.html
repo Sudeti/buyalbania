@@ -274,8 +274,63 @@
                 </div>
             </div>
 
-            <!-- Account Actions -->
+            <!-- Feature Access -->
             <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
+                <div class="card-body">
+                    <h3 class="h5 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle"></i>
+                        Feature Access
+                    </h3>
+                    
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Available Features -->
+                        <div>
+                            <h6 class="text-success mb-2">✅ Available Features</h6>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-search text-success"></i>
+                                    <span>Property Analysis</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-file-text text-success"></i>
+                                    <span>PDF Reports</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-list-ul text-success"></i>
+                                    <span>My Analyses</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Locked Features for Free Users -->
+                        {% if user.profile.subscription_tier == 'free' %}
+                        <div>
+                            <h6 class="text-muted mb-2">🔒 Premium Features</h6>
+                            <div class="d-flex flex-column gap-2 small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-bar-chart text-muted"></i>
+                                    <span class="text-muted">Analytics Dashboard</span>
+                                    <span class="badge bg-warning text-dark ms-auto" style="font-size: 0.6rem;">PRO</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-bell text-muted"></i>
+                                    <span class="text-muted">Property Alerts</span>
+                                    <span class="badge bg-warning text-dark ms-auto" style="font-size: 0.6rem;">PRO</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-graph-up text-muted"></i>
+                                    <span class="text-muted">Market Insights</span>
+                                    <span class="badge bg-warning text-dark ms-auto" style="font-size: 0.6rem;">PRO</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card fade-in mb-4" style="animation-delay: 0.4s;">
                 <div class="card-body">
                     <h3 class="h5 mb-4 d-flex align-items-center gap-2">
                         <i class="bi bi-gear"></i>
@@ -305,6 +360,32 @@
 
         <!-- Main Content Area -->
         <div class="col-lg-8">
+            <!-- Analytics Access Notice for Free Users -->
+            {% if user.profile.subscription_tier == 'free' %}
+            <div class="card fade-in mb-4 border-warning border-opacity-25" style="animation-delay: 0.2s;">
+                <div class="card-body text-center py-4">
+                    <div class="display-4 mb-3">🔒</div>
+                    <h3 class="h5 mb-3">Unlock Analytics Dashboard</h3>
+                    <p class="text-muted mb-4">
+                        Get comprehensive market insights, portfolio analytics, and investment recommendations with our premium plans.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% for plan in subscription_plans %}
+                            {% if plan.tier == 'basic' %}
+                                <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-warning">
+                                    <i class="bi bi-star me-2"></i>Upgrade to Basic
+                                </a>
+                            {% elif plan.tier == 'premium' %}
+                                <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-success">
+                                    <i class="bi bi-crown me-2"></i>Go Premium
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Usage Statistics -->
             <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
                 <div class="card-body">

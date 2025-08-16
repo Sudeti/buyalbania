@@ -9,10 +9,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="display-4 fw-bold mb-2">
-                Investment Dashboard
+                Data-Driven Investment Dashboard
             </h1>
             <p class="lead text-muted mb-0">
-                Track and manage your property analyses
+                Track and manage your data-driven property analyses
             </p>
         </div>
         <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
@@ -68,9 +68,21 @@
                 {% endif %}
             </div>
             {% if user_tier == 'free' %}
-                <a href="#upgrade" class="btn btn-success btn-sm">Upgrade to Basic - €5</a>
+                {% for plan in subscription_plans %}
+                    {% if plan.tier == 'basic' %}
+                        <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-success btn-sm">
+                            <i class="bi bi-star me-1"></i>Upgrade to Basic - €{{ plan.price_monthly }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
             {% elif user_tier == 'basic' %}
-                <a href="#upgrade" class="btn btn-warning btn-sm">Upgrade to Premium - €15</a>
+                {% for plan in subscription_plans %}
+                    {% if plan.tier == 'premium' %}
+                        <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-crown me-1"></i>Upgrade to Premium - €{{ plan.price_monthly }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         </div>
     </div>
@@ -224,7 +236,7 @@
                No Properties Yet
            </h2>
            <p class="lead text-muted mb-5 mx-auto" style="max-width: 500px;">
-               Start analyzing Albanian properties to get AI-powered investment insights and build your portfolio.
+               Start analyzing Albanian properties to get data-driven investment insights and build your portfolio.
            </p>
            
            <div class="card border-primary border-opacity-25 bg-primary bg-opacity-5 mx-auto mb-5" style="max-width: 600px;">
@@ -234,7 +246,7 @@
                        <div class="col-md-6">
                            <div class="d-flex align-items-center gap-2">
                                <i class="bi bi-check-circle-fill text-success"></i>
-                               <span>Investment scoring (0-100)</span>
+                               <span>Data-driven investment scoring (0-100)</span>
                            </div>
                        </div>
                        <div class="col-md-6">
@@ -252,7 +264,7 @@
                        <div class="col-md-6">
                            <div class="d-flex align-items-center gap-2">
                                <i class="bi bi-check-circle-fill text-success"></i>
-                               <span>Professional recommendations</span>
+                               <span>Data-driven recommendations</span>
                            </div>
                        </div>
                    </div>

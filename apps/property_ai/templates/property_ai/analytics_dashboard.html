@@ -103,11 +103,16 @@
     <div class="analytics-card">
         <div class="row align-items-center">
             <div class="col-md-8">
-                <h1 class="h2 mb-2">📊 Analytics Dashboard</h1>
-                <p class="mb-0 opacity-75">Comprehensive market insights and portfolio analytics</p>
+                <h1 class="h2 mb-2">📊 Data-Driven Analytics Dashboard</h1>
+                <p class="mb-0 opacity-75">Comprehensive market insights and portfolio analytics based on real data</p>
             </div>
             <div class="col-md-4 text-end">
                 <span class="badge bg-light text-dark fs-6">Tier: {{ user_tier|title }}</span>
+                {% if user_tier == 'free' %}
+                    <div class="mt-2">
+                        <span class="badge bg-warning text-dark">Free Plan - Limited Access</span>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -319,12 +319,12 @@ def analyze_property(request):
         logger.debug(f"AI analysis details: {result}")
         
         if result.get('status') == 'success':
-            logger.debug(f"AI analysis successful for {request.user.username}")
+            logger.debug(f"Analysis successful for {request.user.username}")
             try:
                 analysis.analysis_result = result
                 analysis.ai_summary = result.get('summary', '')
                 
-                # Convert investment_score to integer
+                # Store data-driven investment score
                 investment_score = result.get('investment_score')
                 if investment_score is not None:
                     try:
@@ -341,45 +341,45 @@ def analyze_property(request):
                     logger.warning(f"Invalid recommendation value: {analysis.recommendation}")
                     analysis.recommendation = 'hold'  # Default to hold
                 
-                # Store enhanced analytics data with proper type conversion
-                market_opportunity_score = result.get('market_opportunity_score')
-                if market_opportunity_score is not None:
-                    analysis.market_opportunity_score = Decimal(str(market_opportunity_score))
+                # Store data-driven market position analysis
+                market_position = result.get('market_position_analysis', {})
+                if market_position:
+                    price_percentile = market_position.get('market_percentile')
+                    if price_percentile is not None:
+                        analysis.price_percentile = Decimal(str(price_percentile))
+                    
+                    price_advantage = market_position.get('price_advantage_percent')
+                    if price_advantage is not None:
+                        analysis.market_position_percentage = Decimal(str(price_advantage))
                 
-                price_analysis = result.get('price_analysis', {})
-                price_percentile = price_analysis.get('price_percentile')
-                if price_percentile is not None:
-                    analysis.price_percentile = Decimal(str(price_percentile))
+                # Store agent intelligence data
+                agent_intelligence = result.get('agent_intelligence', {})
+                if agent_intelligence:
+                    analysis.negotiation_leverage = agent_intelligence.get('negotiation_potential', 'medium')
                 
-                market_position_percentage = price_analysis.get('market_position_percentage')
-                if market_position_percentage is not None:
-                    analysis.market_position_percentage = Decimal(str(market_position_percentage))
+                # Store market momentum data
+                market_momentum = result.get('market_momentum', {})
+                if market_momentum:
+                    market_sentiment = market_momentum.get('market_temperature', 'moderate')
+                    if market_sentiment in ['hot', 'warm', 'moderate', 'cool']:
+                        # Map temperature to sentiment
+                        sentiment_map = {
+                            'hot': 'bullish',
+                            'warm': 'bullish', 
+                            'moderate': 'neutral',
+                            'cool': 'bearish'
+                        }
+                        analysis.market_sentiment = sentiment_map.get(market_sentiment, 'neutral')
                 
-                analysis.negotiation_leverage = result.get('negotiation_leverage')
-                
-                # Validate negotiation_leverage field
-                valid_leverage = ['high', 'medium', 'low']
-                leverage_value = analysis.negotiation_leverage
-                
-                # Handle various edge cases
-                if leverage_value:
-                    leverage_lower = leverage_value.lower().strip()
-                    if 'high' in leverage_lower or 'strong' in leverage_lower:
-                        analysis.negotiation_leverage = 'high'
-                    elif 'medium' in leverage_lower or 'moderate' in leverage_lower:
-                        analysis.negotiation_leverage = 'medium'
-                    elif 'low' in leverage_lower or 'weak' in leverage_lower:
-                        analysis.negotiation_leverage = 'low'
-                    elif leverage_lower not in valid_leverage:
-                        logger.warning(f"Invalid negotiation_leverage value: {leverage_value}")
-                        analysis.negotiation_leverage = 'medium'  # Default to medium
-                else:
-                    analysis.negotiation_leverage = 'medium'  # Default to medium
-                
-                # Fix market_sentiment - it should be a string, not a list
-                market_sentiment = result.get('market_sentiment')
-                if market_sentiment and market_sentiment in ['bullish', 'neutral', 'bearish']:
-                    analysis.market_sentiment = market_sentiment
+                # Store investment potential data
+                investment_potential = result.get('investment_potential', {})
+                if investment_potential:
+                    gross_yield = investment_potential.get('gross_annual_yield', 0)
+                    # Calculate market opportunity score based on yield vs market average
+                    if gross_yield > 0:
+                        # Simple calculation: yield above 6% = good opportunity
+                        opportunity_score = min(100, max(0, (gross_yield - 4.0) * 20))
+                        analysis.market_opportunity_score = Decimal(str(opportunity_score))
                 
                 analysis.status = 'completed'
                 analysis.save()
@@ -481,12 +481,17 @@ def my_analyses(request):
             # Get market summary for user's portfolio
             portfolio_analytics = analytics.get_market_summary()
     
+    # Get subscription plans for upgrade buttons
+    from apps.payments.models import SubscriptionPlan
+    subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+    
     context = {
         'analyses': analyses[:50],
         'user_tier': profile.subscription_tier,
         'remaining_analyses': profile.remaining_analyses,
         'stats': stats,
         'portfolio_analytics': portfolio_analytics,
+        'subscription_plans': subscription_plans,
     }
     return render(request, 'property_ai/my_analyses.html', context)
 

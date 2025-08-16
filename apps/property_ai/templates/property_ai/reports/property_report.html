@@ -5,13 +5,13 @@
     <title>Property Investment Analysis Report</title>
 </head>
 <body>
-    <!-- Page 1: Cover & Executive Summary -->
+    <!-- Page 1: Executive Summary & Market Position -->
     <div class="page-1">
         <!-- Header with Logo -->
         <div class="report-header">
             <div class="logo-section">
-                <div class="logo">AI Property Analysis</div>
-                <div class="tagline">Professional Investment Insights</div>
+                <div class="logo">Property AI</div>
+                <div class="tagline">Data-Driven Investment Intelligence</div>
             </div>
             <div class="report-meta">
                 <div class="report-id">Report #{{ report_id }}</div>
@@ -32,12 +32,14 @@
         <div class="investment-summary">
             <div class="score-card">
                 <div class="score-label">Investment Score</div>
-                <div class="score-value">{{ investment_score|default:85 }}</div>
+                <div class="score-value">{{ investment_score|default:50 }}</div>
                 <div class="score-max">/ 100</div>
+                <div class="score-note">Data-Driven</div>
             </div>
             <div class="recommendation-card">
                 <div class="recommendation-label">Recommendation</div>
-                <div class="recommendation-value {{ recommendation|lower }}">{{ recommendation|default:"BUY"|upper }}</div>
+                <div class="recommendation-value {{ recommendation|lower }}">{{ recommendation|default:"HOLD"|upper }}</div>
+                <div class="recommendation-note">Based on {{ sample_size|default:0 }} comparable properties</div>
             </div>
         </div>
 
@@ -52,12 +54,12 @@
                 <div class="metric-label">Size</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">{{ property_analysis.bedrooms|default:"N/A" }}</div>
-                <div class="metric-label">Bedrooms</div>
+                <div class="metric-value">€{{ price_per_sqm|floatformat:0 }}/m²</div>
+                <div class="metric-label">Price/m²</div>
             </div>
             <div class="metric-card">
-                <div class="metric-value">{{ property_analysis.bathrooms|default:"N/A" }}</div>
-                <div class="metric-label">Bathrooms</div>
+                <div class="metric-value">{{ gross_yield|floatformat:1 }}%</div>
+                <div class="metric-label">Gross Yield</div>
             </div>
         </div>
 
@@ -67,42 +69,125 @@
             <p>{{ summary|default:"This property presents a compelling investment opportunity with strong fundamentals and favorable market positioning." }}</p>
         </div>
 
-        <!-- Price Analysis -->
-        {% if price_analysis %}
-        <div class="price-analysis">
-            <h2>Price Analysis</h2>
-            <div class="price-metrics">
-                <div class="price-metric">
-                    <span class="metric-name">Price per m²:</span>
-                    <span class="metric-value">€{{ price_analysis.price_per_sqm|default:"N/A" }}</span>
+        <!-- Data-Driven Market Analysis -->
+        {% if market_position %}
+        <div class="market-analysis">
+            <h2>Market Position Analysis</h2>
+            <div class="market-metrics">
+                <div class="market-metric">
+                    <span class="metric-name">Market Percentile:</span>
+                    <span class="metric-value {% if market_percentile <= 25 %}text-success{% elif market_percentile <= 50 %}text-primary{% else %}text-warning{% endif %}">
+                        {{ market_percentile|floatformat:1 }}%
+                    </span>
                 </div>
-                <div class="price-metric">
-                    <span class="metric-name">Market Average:</span>
-                    <span class="metric-value">€{{ price_analysis.market_average_per_sqm|default:"N/A" }}</span>
+                {% if potential_savings > 0 %}
+                <div class="market-metric">
+                    <span class="metric-name">Potential Savings:</span>
+                    <span class="metric-value text-success">€{{ potential_savings|floatformat:0 }}</span>
                 </div>
-                <div class="price-metric">
-                    <span class="metric-name">Fair Value:</span>
-                    <span class="metric-value">€{{ price_analysis.fair_value_estimate|default:"N/A" }}</span>
+                {% endif %}
+                {% if sample_size > 0 %}
+                <div class="market-metric">
+                    <span class="metric-name">Data Sources:</span>
+                    <span class="metric-value">{{ sample_size }} comparable properties</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Investment Potential -->
+        {% if investment_potential %}
+        <div class="investment-potential">
+            <h2>Investment Potential</h2>
+            <div class="investment-metrics">
+                <div class="investment-metric">
+                    <div class="metric-value">{{ net_yield|floatformat:1 }}%</div>
+                    <div class="metric-label">Net Annual Yield</div>
+                </div>
+                <div class="investment-metric">
+                    <div class="metric-value">€{{ estimated_rent|floatformat:0 }}</div>
+                    <div class="metric-label">Monthly Rent</div>
+                </div>
+                <div class="investment-metric">
+                    <div class="metric-value">{{ total_return_5y|floatformat:1 }}%</div>
+                    <div class="metric-label">5-Year Return</div>
                 </div>
             </div>
         </div>
         {% endif %}
     </div>
 
-    <!-- Page 2: Detailed Analysis -->
+    <!-- Page 2: Detailed Intelligence -->
     <div class="page-2">
-        <!-- Rental Analysis -->
-        {% if rental_analysis %}
-        <div class="rental-analysis">
-            <h2>Rental Analysis</h2>
-            <div class="rental-metrics">
-                <div class="rental-metric">
-                    <div class="metric-value">€{{ rental_analysis.estimated_monthly_rent|default:"N/A" }}</div>
-                    <div class="metric-label">Monthly Rent</div>
+        <!-- Market Momentum -->
+        {% if market_momentum %}
+        <div class="market-momentum">
+            <h2>Market Intelligence</h2>
+            <div class="momentum-metrics">
+                <div class="momentum-metric">
+                    <div class="metric-value {% if market_temperature == 'hot' %}text-danger{% elif market_temperature == 'warm' %}text-warning{% elif market_temperature == 'cool' %}text-info{% else %}text-secondary{% endif %}">
+                        {{ market_temperature|title }}
+                    </div>
+                    <div class="metric-label">Market Temperature</div>
                 </div>
-                <div class="rental-metric">
-                    <div class="metric-value">{{ rental_analysis.annual_yield|default:"N/A" }}%</div>
-                    <div class="metric-label">Annual Yield</div>
+                <div class="momentum-metric">
+                    <div class="metric-value {% if price_momentum > 0 %}text-success{% else %}text-warning{% endif %}">
+                        {{ price_momentum|floatformat:1 }}%
+                    </div>
+                    <div class="metric-label">30-Day Momentum</div>
+                </div>
+                <div class="momentum-metric">
+                    <div class="metric-value">{{ timing_recommendation|title }}</div>
+                    <div class="metric-label">Timing</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Agent Intelligence -->
+        {% if agent_intelligence and agent_portfolio_size > 0 %}
+        <div class="agent-intelligence">
+            <h2>Agent Intelligence</h2>
+            <div class="agent-metrics">
+                <div class="agent-metric">
+                    <div class="metric-value">{{ agent_portfolio_size }}</div>
+                    <div class="metric-label">Properties Analyzed</div>
+                </div>
+                <div class="agent-metric">
+                    <div class="metric-value {% if agent_vs_market > 0 %}text-warning{% else %}text-success{% endif %}">
+                        {{ agent_vs_market|floatformat:1 }}%
+                    </div>
+                    <div class="metric-label">vs Market Average</div>
+                </div>
+                <div class="agent-metric">
+                    <div class="metric-value {% if negotiation_potential == 'high' %}text-success{% elif negotiation_potential == 'medium' %}text-primary{% else %}text-warning{% endif %}">
+                        {{ negotiation_potential|title }}
+                    </div>
+                    <div class="metric-label">Negotiation Potential</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Property Scarcity -->
+        {% if scarcity_analysis %}
+        <div class="scarcity-analysis">
+            <h2>Property Scarcity</h2>
+            <div class="scarcity-metrics">
+                <div class="scarcity-metric">
+                    <div class="metric-value {% if scarcity_score >= 80 %}text-success{% elif scarcity_score >= 60 %}text-primary{% else %}text-warning{% endif %}">
+                        {{ scarcity_score|floatformat:0 }}
+                    </div>
+                    <div class="metric-label">Scarcity Score</div>
+                </div>
+                <div class="scarcity-metric">
+                    <div class="metric-value">{{ similar_active }}</div>
+                    <div class="metric-label">Similar Available</div>
+                </div>
+                <div class="scarcity-metric">
+                    <div class="metric-value">{{ historical_demand }}</div>
+                    <div class="metric-label">Sold (6 months)</div>
                 </div>
             </div>
         </div>
@@ -111,7 +196,7 @@
         <!-- Market Insights -->
         {% if market_insights %}
         <div class="market-insights">
-            <h2>Market Insights</h2>
+            <h2>Key Insights</h2>
             <ul class="insights-list">
                 {% for insight in market_insights %}
                 <li>{{ insight }}</li>
@@ -120,10 +205,10 @@
         </div>
         {% endif %}
 
-        <!-- Risk Assessment -->
+        <!-- Risk Factors -->
         {% if risk_factors %}
-        <div class="risk-assessment">
-            <h2>Risk Factors</h2>
+        <div class="risk-factors">
+            <h2>Risk Considerations</h2>
             <ul class="risk-list">
                 {% for risk in risk_factors %}
                 <li>{{ risk }}</li>
@@ -132,38 +217,52 @@
         </div>
         {% endif %}
 
-        <!-- Investment Highlights -->
-        <div class="investment-highlights">
-            <h2>Investment Highlights</h2>
-            <div class="highlights-grid">
-                <div class="highlight-item">
-                    <div class="highlight-icon">📈</div>
-                    <div class="highlight-text">Strong market fundamentals</div>
+        <!-- Action Items -->
+        {% if action_items %}
+        <div class="action-items">
+            <h2>Recommended Actions</h2>
+            <ul class="action-list">
+                {% for action in action_items %}
+                <li>{{ action }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Data Sources -->
+        {% if data_sources %}
+        <div class="data-sources">
+            <h2>Analysis Methodology</h2>
+            <div class="data-metrics">
+                <div class="data-metric">
+                    <span class="metric-name">Comparable Properties:</span>
+                    <span class="metric-value">{{ data_sources.comparable_properties|default:0 }}</span>
                 </div>
-                <div class="highlight-item">
-                    <div class="highlight-icon">💰</div>
-                    <div class="highlight-text">Competitive pricing</div>
+                <div class="data-metric">
+                    <span class="metric-name">Agent Properties:</span>
+                    <span class="metric-value">{{ data_sources.agent_properties|default:0 }}</span>
                 </div>
-                <div class="highlight-item">
-                    <div class="highlight-icon">🏘️</div>
-                    <div class="highlight-text">Desirable location</div>
+                <div class="data-metric">
+                    <span class="metric-name">Market Data Points:</span>
+                    <span class="metric-value">{{ data_sources.market_data_points|default:0 }}</span>
                 </div>
-                <div class="highlight-item">
-                    <div class="highlight-icon">📊</div>
-                    <div class="highlight-text">Positive cash flow potential</div>
+                <div class="data-metric">
+                    <span class="metric-name">Analysis Method:</span>
+                    <span class="metric-value">{{ data_sources.analysis_method|default:"Data-Driven"|title }}</span>
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Footer -->
         <div class="report-footer">
             <div class="footer-content">
                 <div class="footer-left">
-                    <div class="company-name">AI Property Analysis</div>
-                    <div class="contact-info">contact@aipropertyanalysis.com</div>
+                    <div class="company-name">Property AI</div>
+                    <div class="contact-info">Data-Driven Investment Intelligence</div>
                 </div>
                 <div class="footer-right">
-                    <div class="report-info">Report generated on {{ generation_date|date:"F d, Y" }}</div>
+                    <div class="report-info">Professional Analysis Report</div>
                     <div class="report-id-footer">ID: {{ report_id }}</div>
                 </div>
             </div>

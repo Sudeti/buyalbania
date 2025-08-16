@@ -11,6 +11,18 @@ logger = logging.getLogger(__name__)
 @login_required
 def analytics_dashboard(request):
     """Comprehensive analytics dashboard for users"""
+    # Check if user has access to analytics
+    user_tier = request.user.profile.subscription_tier
+    if user_tier == 'free':
+        # Get subscription plans for upgrade buttons
+        from apps.payments.models import SubscriptionPlan
+        subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+        
+        return render(request, 'property_ai/analytics_locked.html', {
+            'user_tier': user_tier,
+            'subscription_plans': subscription_plans,
+        })
+    
     try:
         analytics = PropertyAnalytics()
         
@@ -107,6 +119,10 @@ def analytics_dashboard(request):
 @login_required
 def market_insights_api(request):
     """API endpoint for market insights data"""
+    # Check if user has access to analytics
+    if request.user.profile.subscription_tier == 'free':
+        return JsonResponse({'error': 'Analytics access requires a paid plan'}, status=403)
+    
     try:
         location = request.GET.get('location', '')
         property_type = request.GET.get('property_type', '')
@@ -139,6 +155,10 @@ def market_insights_api(request):
 @login_required
 def opportunity_analysis_api(request, analysis_id):
     """API endpoint for detailed opportunity analysis"""
+    # Check if user has access to analytics
+    if request.user.profile.subscription_tier == 'free':
+        return JsonResponse({'error': 'Analytics access requires a paid plan'}, status=403)
+    
     try:
         analysis = PropertyAnalysis.objects.get(id=analysis_id, user=request.user)
         analytics = PropertyAnalytics()

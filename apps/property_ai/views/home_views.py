@@ -70,7 +70,7 @@ def services(request):
                 '1 property analysis per month',
                 'AI investment score',
                 'PDF report via email',
-                'Access to existing analyses',
+                'Access to your currentanalyses',
                 'No market insights',
             ],
             'cta_text': 'Start Free',

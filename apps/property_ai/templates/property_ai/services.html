@@ -4,37 +4,23 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="py-5">
+<section class="py-4">
     <div class="container">
         <div class="text-center mx-auto" style="max-width: 800px;">
             <h1 class="display-4 fw-bold mb-4">
-                Choose Your <span class="text-primary">Analysis Plan</span>
+                Choose Your <span class="text-primary">Data-Driven Plan</span>
             </h1>
             <p class="lead text-muted mb-5">
-                Professional property analysis for every investor. Start free, upgrade when you're ready.
+                Real market intelligence for every investor. No AI hallucinations, just facts.
             </p>
             
-            <!-- Trust Indicators -->
-            <div class="d-flex justify-content-center gap-4 flex-wrap text-muted small mb-5">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill text-success"></i>
-                    <span>{{ stats.total_analyses|default:"1,200+" }} Properties Analyzed</span>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill text-success"></i>
-                    <span>No Credit Card Required</span>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill text-success"></i>
-                    <span>Cancel Anytime</span>
-                </div>
-            </div>
+            
         </div>
     </div>
 </section>
 
 <!-- Pricing Cards -->
-<section class="py-5">
+<section class="py-4">
     <div class="container">
         <div class="row g-4 justify-content-center">
             {% for tier in tiers %}
@@ -98,13 +84,53 @@
     </div>
 </section>
 
+<!-- Data Transparency -->
+<section class="bg-primary bg-opacity-10 py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-6 fw-bold mb-3">Data Transparency</h2>
+            <p class="lead text-muted">
+                Every analysis shows exactly what data was used
+            </p>
+            <div class="alert alert-info mx-auto mt-3" style="max-width: 600px;">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>AI Usage:</strong> AI generates professional text summaries and insights. All numbers, scores, and calculations are data-driven.
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="h5 fw-bold mb-3">📊 Sample Size Disclosure</h4>
+                        <p class="text-muted small">
+                            See exactly how many comparable properties were analyzed. No hidden assumptions or AI hallucinations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="h5 fw-bold mb-3">🎯 Methodology Transparency</h4>
+                        <p class="text-muted small">
+                            Understand how each score and recommendation was calculated using real market data.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Key Features -->
 <section class="bg-light py-5">
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="display-6 fw-bold mb-3">What You Get</h2>
             <p class="lead text-muted">
-                Professional AI-powered property analysis for Albanian real estate
+                Data-driven property intelligence powered by real market data
             </p>
         </div>
         
@@ -113,9 +139,9 @@
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center p-4">
                         <div class="display-4 mb-3">🤖</div>
-                        <h4 class="h5 fw-bold mb-3">AI Investment Analysis</h4>
+                        <h4 class="h5 fw-bold mb-3">Data-Driven Investment Analysis</h4>
                         <p class="text-muted small">
-                            Get AI-powered investment scores, recommendations, and market insights for every property
+                            Get investment scores, recommendations, and market insights based on real market data
                         </p>
                     </div>
                 </div>
@@ -136,10 +162,22 @@
             <div class="col-lg-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center p-4">
+                        <div class="display-4 mb-3">🔔</div>
+                        <h4 class="h5 fw-bold mb-3">Property Alerts</h4>
+                        <p class="text-muted small">
+                            Get notified when properties are listed 10%+ below market average. Never miss a deal again!
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
                         <div class="display-4 mb-3">📊</div>
                         <h4 class="h5 fw-bold mb-3">Market Analytics</h4>
                         <p class="text-muted small">
-                            Access market trends, comparable properties, and negotiation insights
+                            Access real market trends, comparable properties, and data-driven negotiation insights
                         </p>
                     </div>
                 </div>
@@ -161,7 +199,7 @@
                     <div class="card-body p-4">
                         <h5 class="card-title fw-bold">How does the analysis work?</h5>
                         <p class="card-text text-muted">
-                            Simply paste a property URL from Century21 Albania. Our AI analyzes the property data, market conditions, and comparable properties to provide investment scores and recommendations.
+                            Simply paste a property URL from Century21 Albania. Our data-driven system analyzes real property data, market conditions, and comparable properties to provide investment scores and recommendations.
                         </p>
                     </div>
                 </div>
@@ -211,7 +249,7 @@
                 Ready to Start Analyzing?
             </h2>
             <p class="lead text-white-50 mb-5">
-                Join hundreds of investors making smarter property decisions with AI-powered analysis
+                Join hundreds of investors making data-driven property decisions with real market intelligence
             </p>
             <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
                 Start Free Analysis
@@ -229,16 +267,35 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Upgrade functionality coming soon! For now, you can:</p>
-                <ul>
-                    <li>Continue using your current plan</li>
-                    <li>Contact us for manual upgrades</li>
-                    <li>Use your remaining analyses</li>
-                </ul>
+                <p>Choose your upgrade plan:</p>
+                <div class="row g-3">
+                    {% for plan in tiers %}
+                        {% if plan.name != 'Free' %}
+                        <div class="col-12">
+                            <div class="card border-{{ plan.color }} border-opacity-25">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{{ plan.name }}</h6>
+                                    <div class="h4 text-{{ plan.color }} mb-2">{{ plan.price }}/month</div>
+                                    <div class="text-muted small mb-3">{{ plan.analyses }} {{ plan.period_text }}</div>
+                                    {% if plan.cta_url == 'payments:checkout' %}
+                                        <a href="{% url plan.cta_url plan_id=plan.plan_id %}" class="btn btn-{{ plan.color }} btn-sm w-100">
+                                            {{ plan.cta_text }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url plan.cta_url %}" class="btn btn-{{ plan.color }} btn-sm w-100">
+                                            {{ plan.cta_text }}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">Analyze Property</a>
+                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">Continue with Free Analysis</a>
             </div>
         </div>
     </div>

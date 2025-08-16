@@ -83,8 +83,8 @@
             <div class="card border-success border-opacity-25 bg-success bg-opacity-5 fade-in mb-4">
                 <div class="card-body">
                     <h2 class="h4 mb-3 d-flex align-items-center gap-2">
-                        <i class="bi bi-cpu"></i>
-                        Key Investment Insights
+                        <i class="bi bi-database"></i>
+                        Data-Driven Investment Insights
                     </h2>
                     <p class="lead mb-0">
                         {{ analysis.ai_summary }}
@@ -93,48 +93,150 @@
             </div>
             {% endif %}
 
-            <!-- Price Analysis -->
-            {% if analysis.analysis_result.price_analysis %}
+            <!-- Data-Driven Market Analysis -->
+            {% if analysis.analysis_result.market_position_analysis %}
             <div class="card fade-in mb-4" style="animation-delay: 0.1s;">
                 <div class="card-body">
                     <h2 class="h4 mb-4 d-flex align-items-center gap-2">
                         <i class="bi bi-graph-up"></i>
-                        Market Position Analysis
+                        Data-Driven Market Analysis
                     </h2>
                     
                     <div class="row g-4 mb-4">
-                        {% if analysis.analysis_result.price_analysis.market_position_percentage %}
+                        {% if analysis.analysis_result.market_position_analysis.market_percentile %}
                         <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <div class="h2 fw-bold mb-2 {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}text-success{% else %}text-warning{% endif %}">
-                                    {{ analysis.analysis_result.price_analysis.market_position_percentage|floatformat:1 }}%
+                                <div class="h2 fw-bold mb-2 {% if analysis.analysis_result.market_position_analysis.market_percentile <= 25 %}text-success{% elif analysis.analysis_result.market_position_analysis.market_percentile <= 50 %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ analysis.analysis_result.market_position_analysis.market_percentile|floatformat:1 }}%
                                 </div>
-                                <div class="text-muted small mb-2">vs Market Average</div>
-                                <span class="badge {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}bg-success{% else %}bg-warning{% endif %}">
-                                    {% if analysis.analysis_result.price_analysis.market_position_percentage < 0 %}Below Market{% else %}Above Market{% endif %}
+                                <div class="text-muted small mb-2">Market Percentile</div>
+                                <span class="badge {% if analysis.analysis_result.market_position_analysis.market_percentile <= 25 %}bg-success{% elif analysis.analysis_result.market_position_analysis.market_percentile <= 50 %}bg-primary{% else %}bg-warning{% endif %}">
+                                    {% if analysis.analysis_result.market_position_analysis.market_percentile <= 25 %}Bottom Quartile{% elif analysis.analysis_result.market_position_analysis.market_percentile <= 50 %}Below Median{% else %}Above Median{% endif %}
                                 </span>
+                                <div class="small text-muted mt-1">
+                                    Based on {{ analysis.analysis_result.market_position_analysis.sample_size }} comparable properties from our database
+                                </div>
                             </div>
                         </div>
                         {% endif %}
                         
-                        {% if analysis.analysis_result.rental_analysis.annual_gross_yield %}
+                        {% if analysis.analysis_result.investment_potential.gross_annual_yield %}
                         <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
                                 <div class="h2 fw-bold text-primary mb-2">
-                                    {{ analysis.analysis_result.rental_analysis.annual_gross_yield }}
+                                    {{ analysis.analysis_result.investment_potential.gross_annual_yield|floatformat:1 }}%
                                 </div>
-                                <div class="text-muted small mb-2">Annual Rental Yield</div>
-                                <span class="badge bg-primary">Estimated</span>
+                                <div class="text-muted small mb-2">Annual Gross Yield</div>
+                                <span class="badge bg-primary">Data-Driven</span>
+                                <div class="small text-muted mt-1">
+                                    €{{ analysis.analysis_result.investment_potential.estimated_monthly_rent|floatformat:0 }}/month estimated rent
+                                </div>
                             </div>
                         </div>
                         {% endif %}
                     </div>
                     
-                    {% if analysis.analysis_result.price_analysis.negotiation_potential %}
+                    {% if analysis.analysis_result.market_position_analysis.potential_savings %}
                     <div class="alert alert-info">
                         <i class="bi bi-lightbulb me-2"></i>
-                        <strong>Negotiation Opportunity:</strong> 
-                        {{ analysis.analysis_result.price_analysis.negotiation_potential }} price reduction potential based on market analysis.
+                        <strong>Market Opportunity:</strong> 
+                        Potential savings of €{{ analysis.analysis_result.market_position_analysis.potential_savings|floatformat:0 }} compared to market median.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Agent Intelligence -->
+            {% if analysis.analysis_result.agent_intelligence %}
+            <div class="card fade-in mb-4" style="animation-delay: 0.2s;">
+                <div class="card-body">
+                    <h2 class="h4 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge"></i>
+                        Agent Intelligence
+                    </h2>
+                    <div class="row g-4">
+                        {% if analysis.analysis_result.agent_intelligence.agent_portfolio_size %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold text-primary mb-2">
+                                    {{ analysis.analysis_result.agent_intelligence.agent_portfolio_size }}
+                                </div>
+                                <div class="text-muted small">Properties Analyzed</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if analysis.analysis_result.agent_intelligence.negotiation_potential %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.agent_intelligence.negotiation_potential == 'high' %}text-success{% elif analysis.analysis_result.agent_intelligence.negotiation_potential == 'medium' %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ analysis.analysis_result.agent_intelligence.negotiation_potential|title }}
+                                </div>
+                                <div class="text-muted small">Negotiation Potential</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if analysis.analysis_result.agent_intelligence.agent_avg_price_vs_market %}
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Agent Pricing Pattern:</strong> 
+                        This agent typically prices {{ analysis.analysis_result.agent_intelligence.agent_avg_price_vs_market|floatformat:1 }}% 
+                        {% if analysis.analysis_result.agent_intelligence.agent_avg_price_vs_market > 0 %}above{% else %}below{% endif %} 
+                        market average across {{ analysis.analysis_result.agent_intelligence.agent_portfolio_size }} properties.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Market Momentum -->
+            {% if analysis.analysis_result.market_momentum %}
+            <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
+                <div class="card-body">
+                    <h2 class="h4 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-speedometer2"></i>
+                        Market Momentum
+                    </h2>
+                    <div class="row g-4">
+                        {% if analysis.analysis_result.market_momentum.market_temperature %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.market_momentum.market_temperature == 'hot' %}text-danger{% elif analysis.analysis_result.market_momentum.market_temperature == 'warm' %}text-warning{% elif analysis.analysis_result.market_momentum.market_temperature == 'cool' %}text-info{% else %}text-secondary{% endif %}">
+                                    {{ analysis.analysis_result.market_momentum.market_temperature|title }}
+                                </div>
+                                <div class="text-muted small">Market Temperature</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if analysis.analysis_result.market_momentum.price_momentum_30d %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.market_momentum.price_momentum_30d > 0 %}text-success{% else %}text-warning{% endif %}">
+                                    {{ analysis.analysis_result.market_momentum.price_momentum_30d|floatformat:1 }}%
+                                </div>
+                                <div class="text-muted small">30-Day Price Momentum</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if analysis.analysis_result.market_momentum.timing_recommendation %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-clock me-2"></i>
+                        <strong>Market Timing:</strong> 
+                        {% if analysis.analysis_result.market_momentum.timing_recommendation == 'act_fast' %}
+                            Market conditions favor quick action - act fast to secure this property.
+                        {% elif analysis.analysis_result.market_momentum.timing_recommendation == 'good_timing' %}
+                            Good timing for investment - market conditions are favorable.
+                        {% elif analysis.analysis_result.market_momentum.timing_recommendation == 'wait_better' %}
+                            Consider waiting for better market conditions.
+                        {% else %}
+                            Market timing is neutral - standard due diligence recommended.
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -143,11 +245,11 @@
 
             <!-- Market Insights -->
             {% if analysis.analysis_result.market_insights %}
-            <div class="card fade-in mb-4" style="animation-delay: 0.2s;">
+            <div class="card fade-in mb-4" style="animation-delay: 0.4s;">
                 <div class="card-body">
                     <h2 class="h4 mb-4 d-flex align-items-center gap-2">
                         <i class="bi bi-lightbulb"></i>
-                        Market Insights
+                        Market Intelligence Insights
                     </h2>
                     <div class="d-flex flex-column gap-3">
                         {% for insight in analysis.analysis_result.market_insights %}
@@ -163,43 +265,111 @@
             </div>
             {% endif %}
 
-            <!-- Rental Analysis -->
-            {% if analysis.analysis_result.rental_analysis %}
-            <div class="card fade-in mb-4" style="animation-delay: 0.3s;">
+            <!-- Investment Potential -->
+            {% if analysis.analysis_result.investment_potential %}
+            <div class="card fade-in mb-4" style="animation-delay: 0.5s;">
                 <div class="card-body">
                     <h2 class="h4 mb-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-house"></i>
-                        Rental Investment Potential
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Investment Potential
                     </h2>
                     
                     <div class="row g-4">
-                        {% if analysis.analysis_result.rental_analysis.estimated_monthly_rent %}
+                        {% if analysis.analysis_result.investment_potential.net_annual_yield %}
                         <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <div class="h3 fw-bold text-primary mb-2">€{{ analysis.analysis_result.rental_analysis.estimated_monthly_rent|floatformat:0 }}</div>
-                                <div class="text-muted small">Estimated Monthly Rent</div>
+                                <div class="h3 fw-bold text-primary mb-2">{{ analysis.analysis_result.investment_potential.net_annual_yield|floatformat:1 }}%</div>
+                                <div class="text-muted small">Net Annual Yield</div>
+                                <div class="small text-muted">After costs & taxes</div>
                             </div>
                         </div>
                         {% endif %}
                         
-                        {% if analysis.analysis_result.rental_analysis.rental_demand %}
+                        {% if analysis.analysis_result.investment_potential.projected_5y_total_return %}
                         <div class="col-md-6">
                             <div class="text-center p-3 bg-light rounded">
-                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.rental_analysis.rental_demand == 'high' %}text-success{% elif analysis.analysis_result.rental_analysis.rental_demand == 'medium' %}text-primary{% else %}text-warning{% endif %}">
-                                    {{ analysis.analysis_result.rental_analysis.rental_demand|title }}
+                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.investment_potential.projected_5y_total_return >= 50 %}text-success{% elif analysis.analysis_result.investment_potential.projected_5y_total_return >= 30 %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ analysis.analysis_result.investment_potential.projected_5y_total_return|floatformat:1 }}%
                                 </div>
-                                <div class="text-muted small">Rental Demand</div>
+                                <div class="text-muted small">5-Year Total Return</div>
+                                <div class="small text-muted">Rent + appreciation</div>
                             </div>
                         </div>
                         {% endif %}
                     </div>
+                    
+                    {% if analysis.analysis_result.investment_potential.break_even_months %}
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-calculator me-2"></i>
+                        <strong>Break-even Analysis:</strong> 
+                        Investment pays for itself in {{ analysis.analysis_result.investment_potential.break_even_months|floatformat:0 }} months 
+                        ({{ analysis.analysis_result.investment_potential.break_even_years|default:0|floatformat:1 }} years).
+                    </div>
+                    {% endif %}
+                    
+                    {% if analysis.analysis_result.investment_potential.market_comparison.performance %}
+                    <div class="alert alert-success mt-2">
+                        <i class="bi bi-trophy me-2"></i>
+                        <strong>Market Performance:</strong> 
+                        {{ analysis.analysis_result.investment_potential.market_comparison.yield_difference|floatformat:1 }}% 
+                        {% if analysis.analysis_result.investment_potential.market_comparison.performance == 'above_market' %}above{% else %}below{% endif %} 
+                        {{ analysis.analysis_result.investment_potential.market_comparison.market_average|floatformat:1 }}% market average yield.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Property Scarcity -->
+            {% if analysis.analysis_result.scarcity_analysis %}
+            <div class="card fade-in mb-4" style="animation-delay: 0.6s;">
+                <div class="card-body">
+                    <h2 class="h4 mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-gem"></i>
+                        Property Scarcity
+                    </h2>
+                    <div class="row g-4">
+                        {% if analysis.analysis_result.scarcity_analysis.scarcity_score %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold mb-2 {% if analysis.analysis_result.scarcity_analysis.scarcity_score >= 80 %}text-success{% elif analysis.analysis_result.scarcity_analysis.scarcity_score >= 60 %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ analysis.analysis_result.scarcity_analysis.scarcity_score|floatformat:0 }}
+                                </div>
+                                <div class="text-muted small">Scarcity Score</div>
+                                <div class="small text-muted">{{ analysis.analysis_result.scarcity_analysis.scarcity_category|title }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if analysis.analysis_result.scarcity_analysis.similar_active_count is not None %}
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="h3 fw-bold text-primary mb-2">
+                                    {{ analysis.analysis_result.scarcity_analysis.similar_active_count }}
+                                </div>
+                                <div class="text-muted small">Similar Properties Available</div>
+                                <div class="small text-muted">{{ analysis.analysis_result.scarcity_analysis.historical_demand }} sold in 6 months</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if analysis.analysis_result.scarcity_analysis.uniqueness_factors %}
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-star me-2"></i>
+                        <strong>Unique Features:</strong>
+                        {% for feature in analysis.analysis_result.scarcity_analysis.uniqueness_factors %}
+                            {{ feature }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
 
             <!-- Risk Factors -->
             {% if analysis.analysis_result.risk_factors %}
-            <div class="card border-warning border-opacity-25 bg-warning bg-opacity-5 fade-in mb-4" style="animation-delay: 0.4s;">
+            <div class="card border-warning border-opacity-25 bg-warning bg-opacity-5 fade-in mb-4" style="animation-delay: 0.7s;">
                 <div class="card-body">
                     <h2 class="h4 mb-4 d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle"></i>
@@ -314,6 +484,40 @@
                             <span class="small">{{ action }}</span>
                         </div>
                         {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Data Sources -->
+            {% if analysis.analysis_result.data_sources %}
+            <div class="card fade-in mb-4" style="animation-delay: 0.7s;">
+                <div class="card-body">
+                    <h3 class="h5 mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-database"></i>
+                        Data Sources & Methodology
+                    </h3>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Comparable Properties</span>
+                            <strong>{{ analysis.analysis_result.data_sources.comparable_properties|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Agent Properties</span>
+                            <strong>{{ analysis.analysis_result.data_sources.agent_properties|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Market Data Points</span>
+                            <strong>{{ analysis.analysis_result.data_sources.market_data_points|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-2">
+                            <span class="text-muted">Analysis Method</span>
+                            <strong>{{ analysis.analysis_result.data_sources.analysis_method|default:"Data-Driven"|title }}</strong>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Transparency:</strong> Every number and recommendation is based on real market data, not AI assumptions.
                     </div>
                 </div>
             </div>
