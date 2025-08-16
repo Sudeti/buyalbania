@@ -18,34 +18,51 @@ logger = logging.getLogger(__name__)
 @login_required
 def download_report(request, analysis_id):
     """Download PDF report"""
+    logger.info(f"Download report request for analysis {analysis_id} by user {request.user.id} ({request.user.email})")
     try:
         # First try to get the analysis without user filter
+        logger.info(f"Looking for analysis with ID: {analysis_id}")
         analysis = get_object_or_404(PropertyAnalysis, id=analysis_id)
+        logger.info(f"Found analysis: {analysis.property_title} (status: {analysis.status})")
         
         # Check if user has access to this analysis
-        if not analysis.is_available_to_user(request.user):
+        logger.info(f"Checking access for user {request.user.id} ({request.user.email}) to analysis {analysis_id}")
+        logger.info(f"Analysis user: {analysis.user}, Analysis status: {analysis.status}")
+        
+        if hasattr(request.user, 'profile'):
+            logger.info(f"User profile tier: {request.user.profile.subscription_tier}")
+        else:
+            logger.warning("User has no profile")
+            
+        access_granted = analysis.is_available_to_user(request.user)
+        logger.info(f"Access granted: {access_granted}")
+        
+        if not access_granted:
             logger.warning(f"User {request.user.id} ({request.user.email}) denied access to analysis {analysis_id}")
-            logger.warning(f"Analysis user: {analysis.user}, Analysis status: {analysis.status}")
-            if hasattr(request.user, 'profile'):
-                logger.warning(f"User profile tier: {request.user.profile.subscription_tier}")
-            else:
-                logger.warning("User has no profile")
             messages.error(request, 'You do not have access to this analysis.')
             return redirect('property_ai:my_analyses')
         
         if analysis.report_generated and analysis.report_file_path:
             logger.info(f"Checking report file: {analysis.report_file_path}")
             logger.info(f"File exists: {os.path.exists(analysis.report_file_path)}")
+            logger.info(f"File is file: {os.path.isfile(analysis.report_file_path) if os.path.exists(analysis.report_file_path) else 'N/A'}")
+            logger.info(f"File size: {os.path.getsize(analysis.report_file_path) if os.path.exists(analysis.report_file_path) else 'N/A'}")
             
-            if os.path.exists(analysis.report_file_path):
+            if os.path.exists(analysis.report_file_path) and os.path.isfile(analysis.report_file_path):
                 # Create a professional filename
                 property_title = analysis.property_title or "Property"
                 safe_title = "".join(c for c in property_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
                 safe_title = safe_title.replace(' ', '_')[:30]  # Limit length
                 
                 filename = f"AI_Property_Analysis_{safe_title}_{analysis_id[:8]}.pdf"
+                logger.info(f"Generated filename: {filename}")
                 
                 try:
+                    # Check if file is readable
+                    with open(analysis.report_file_path, 'rb') as f:
+                        first_bytes = f.read(10)
+                        logger.info(f"File starts with: {first_bytes}")
+                    
                     return FileResponse(
                         open(analysis.report_file_path, 'rb'),
                         as_attachment=True,
@@ -53,12 +70,20 @@ def download_report(request, analysis_id):
                     )
                 except Exception as e:
                     logger.error(f"Error opening file {analysis.report_file_path}: {e}")
+                    import traceback
+                    logger.error(f"File error traceback: {traceback.format_exc()}")
                     messages.error(request, 'Error reading report file.')
                     return redirect('property_ai:analysis_detail', analysis_id=analysis_id)
             else:
-                logger.error(f"Report file not found at path: {analysis.report_file_path}")
+                logger.error(f"Report file not found or not a file at path: {analysis.report_file_path}")
                 logger.error(f"Current working directory: {os.getcwd()}")
                 logger.error(f"MEDIA_ROOT: {getattr(settings, 'MEDIA_ROOT', 'Not set')}")
+                
+                # Check if directory exists
+                dir_path = os.path.dirname(analysis.report_file_path)
+                logger.error(f"Directory exists: {os.path.exists(dir_path)}")
+                logger.error(f"Directory path: {dir_path}")
+                
                 messages.error(request, 'Report file not found on server.')
         else:
             logger.warning(f"Analysis {analysis_id} has report_generated={analysis.report_generated}, report_file_path={analysis.report_file_path}")
@@ -67,6 +92,8 @@ def download_report(request, analysis_id):
         return redirect('property_ai:analysis_detail', analysis_id=analysis_id)
         
     except Exception as e:
+        import traceback
         logger.error(f"Error downloading report for analysis {analysis_id}: {e}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         messages.error(request, 'Error accessing report. Please try again.')
         return redirect('property_ai:my_analyses')

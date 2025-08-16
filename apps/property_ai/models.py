@@ -119,30 +119,44 @@ class PropertyAnalysis(TimeStampedModel):
     # ADD: Tier access control
     def is_available_to_user(self, user):
         """Global access control - all analyses are available based on tier"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         if not user or not user.is_authenticated:
+            logger.debug(f"User not authenticated: {user}")
             return False
             
         user_profile = getattr(user, 'profile', None)
         if not user_profile:
+            logger.debug(f"User {user.id} has no profile")
             return False
             
         tier = user_profile.subscription_tier
+        logger.debug(f"User {user.id} has tier: {tier}")
         
         # All tiers can access their own analyses
         if self.user == user:
+            logger.debug(f"User {user.id} owns this analysis")
             return True
         
         # For global analyses (any analysis in the system)
         if tier == 'free':
             # Free: Can access any completed analysis
-            return self.status == 'completed'
+            access = self.status == 'completed'
+            logger.debug(f"Free tier access: {access} (status: {self.status})")
+            return access
         elif tier == 'basic':  # This is your "Premium" tier
             # Basic: Can access any completed analysis
-            return self.status == 'completed'
+            access = self.status == 'completed'
+            logger.debug(f"Basic tier access: {access} (status: {self.status})")
+            return access
         elif tier == 'premium':  # This is your "Ultimate" tier
             # Premium: Can access any completed analysis
-            return self.status == 'completed'
+            access = self.status == 'completed'
+            logger.debug(f"Premium tier access: {access} (status: {self.status})")
+            return access
         else:
+            logger.debug(f"Unknown tier: {tier}")
             return False
         
     # KEEP ALL EXISTING PROPERTIES AND METHODS
