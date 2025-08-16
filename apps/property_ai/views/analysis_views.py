@@ -387,10 +387,18 @@ def analyze_property(request):
                 # 🆕 ADD THIS: Trigger PDF generation and email
                 from ..tasks import generate_property_report_task
                 try:
+                    # Try to queue the task asynchronously
                     generate_property_report_task.delay(analysis.id)
                     logger.info(f"Queued PDF report generation for analysis {analysis.id}")
                 except Exception as e:
                     logger.error(f"Failed to queue PDF generation for analysis {analysis.id}: {e}")
+                    # Fallback: run synchronously if Celery is not available
+                    try:
+                        logger.info(f"Running PDF generation synchronously for analysis {analysis.id}")
+                        generate_property_report_task(analysis.id)
+                        logger.info(f"PDF generated synchronously for analysis {analysis.id}")
+                    except Exception as sync_error:
+                        logger.error(f"Failed to generate PDF synchronously for analysis {analysis.id}: {sync_error}")
                 
                 logger.debug(f"Analysis completed successfully for {request.user.username}")
                 messages.success(request, f'Analysis complete! You have {profile.remaining_analyses} analyses remaining this month.')

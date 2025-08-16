@@ -196,26 +196,12 @@ class PropertyAI:
         return result[0]
 
     def generate_report(self, property_analysis):
-        """Generate detailed report content"""
+        """Generate detailed report content with data-driven analysis"""
         result = property_analysis.analysis_result or {}
         
-        summary = result.get("summary", "Property analysis completed")
-        score = property_analysis.investment_score or 0
-        recommendation = property_analysis.recommendation or "hold"
-        
-        return f"""
-        Property Investment Analysis Report
-        
-        Property: {property_analysis.property_title}
-        Location: {property_analysis.property_location}
-        Investment Score: {score}/100
-        Recommendation: {recommendation.replace('_', ' ').title()}
-        
-        Summary:
-        {summary}
-        
-        Generated on: {property_analysis.created_at.strftime('%Y-%m-%d %H:%M')}
-        """
+        # Use the existing analysis result which should contain data-driven content
+        # The PDF generator will extract the specific fields it needs from this
+        return result
     
     def _convert_decimals_to_float(self, obj):
         """Convert Decimal objects to float for JSON serialization"""

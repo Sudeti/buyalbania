@@ -24,16 +24,21 @@ class PropertyReportPDF:
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
     
     def generate_pdf_report(self, property_analysis: PropertyAnalysis, 
-                      report_content: str) -> str:
+                      report_content: str = "") -> str:
         """
         Generate comprehensive PDF report from property analysis
         """
         try:
-            # Prepare template context
+            logger.info(f"Generating PDF for property analysis {property_analysis.id}")
+            logger.info(f"Analysis result keys: {list(property_analysis.analysis_result.keys()) if property_analysis.analysis_result else 'None'}")
+            
+            # Prepare template context - use analysis_result from property_analysis
             context = self._prepare_template_context(property_analysis, report_content)
             
             # Render HTML template
+            logger.info(f"Rendering template with context keys: {list(context.keys())}")
             html_content = render_to_string('property_ai/reports/property_report.html', context)
+            logger.info(f"Template rendered successfully, HTML length: {len(html_content)}")
             
             # Generate PDF
             pdf_filename = f"property_report_{property_analysis.id}_{datetime.now().strftime('%Y%m%d')}.pdf"
@@ -43,17 +48,27 @@ class PropertyReportPDF:
             html_doc = HTML(string=html_content, base_url=settings.STATIC_URL)
             css = CSS(string=self._get_pdf_css())
             
+            logger.info(f"Writing PDF to: {pdf_path}")
             html_doc.write_pdf(pdf_path, stylesheets=[css])
+            logger.info(f"PDF generated successfully: {pdf_path}")
             
             logger.info(f"Generated PDF report: {pdf_path}")
             return pdf_path
             
         except Exception as e:
             logger.error(f"Error generating PDF report: {str(e)}")
+            import traceback
+            logger.error(f"PDF generation traceback: {traceback.format_exc()}")
             raise
     
-    def _prepare_template_context(self, property_analysis: PropertyAnalysis, report_content: str) -> Dict[str, Any]:
+    def _prepare_template_context(self, property_analysis: PropertyAnalysis, report_content: str = "") -> Dict[str, Any]:
+        # Use analysis_result from property_analysis object (data-driven content)
         analysis_result = property_analysis.analysis_result or {}
+        
+        logger.info(f"Preparing template context for analysis {property_analysis.id}")
+        logger.info(f"Analysis result status: {analysis_result.get('status', 'unknown')}")
+        logger.info(f"Investment score: {analysis_result.get('investment_score', 'not set')}")
+        logger.info(f"Recommendation: {analysis_result.get('recommendation', 'not set')}")
         
         # Use data-driven analysis results
         summary = analysis_result.get("summary", "")
@@ -65,12 +80,12 @@ class PropertyReportPDF:
         risk_factors = analysis_result.get('risk_factors', [])[:3]  # Limit to 3 items
         action_items = analysis_result.get('action_items', [])[:5]  # Limit to 5 items
         
-        # Data-driven analysis components
-        market_position = analysis_result.get('market_position_analysis', {})
-        agent_intelligence = analysis_result.get('agent_intelligence', {})
-        market_momentum = analysis_result.get('market_momentum', {})
-        scarcity_analysis = analysis_result.get('scarcity_analysis', {})
-        investment_potential = analysis_result.get('investment_potential', {})
+        # Data-driven analysis components - handle None values
+        market_position = analysis_result.get('market_position_analysis', {}) or {}
+        agent_intelligence = analysis_result.get('agent_intelligence', {}) or {}
+        market_momentum = analysis_result.get('market_momentum', {}) or {}
+        scarcity_analysis = analysis_result.get('scarcity_analysis', {}) or {}
+        investment_potential = analysis_result.get('investment_potential', {}) or {}
         
         # Calculate key metrics for PDF
         price_per_sqm = property_analysis.price_per_sqm or 0

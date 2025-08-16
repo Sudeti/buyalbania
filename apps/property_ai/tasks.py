@@ -24,18 +24,23 @@ def generate_property_report_task(self, property_analysis_id):
     try:
         property_analysis = PropertyAnalysis.objects.get(id=property_analysis_id)
         
+        # Check if report already exists
+        if property_analysis.report_generated and property_analysis.report_file_path:
+            logger.info(f"Report already exists for analysis {property_analysis_id}: {property_analysis.report_file_path}")
+            return f"Report already exists: {property_analysis.report_file_path}"
+        
+        logger.info(f"Starting PDF generation for analysis {property_analysis_id}")
+        logger.info(f"Analysis status: {property_analysis.status}")
+        logger.info(f"Analysis result keys: {list(property_analysis.analysis_result.keys()) if property_analysis.analysis_result else 'None'}")
+        
         property_analysis.processing_stage = 'creating_pdf'
         property_analysis.save()
 
-        # Generate report content
-        ai = PropertyAI()
-        report_content = ai.generate_report(property_analysis)
-
-        # Generate PDF
+        # Generate PDF - use analysis_result directly since it contains data-driven content
         pdf_generator = PropertyReportPDF()
         pdf_file_path = pdf_generator.generate_pdf_report(
             property_analysis=property_analysis,
-            report_content=report_content
+            report_content=""  # Empty string since we use analysis_result from property_analysis
         )
 
         property_analysis.processing_stage = 'completed'
@@ -150,9 +155,9 @@ def analyze_property_task(self, property_analysis_id):
         from apps.property_ai.views import get_comparable_properties
         comparable_properties = get_comparable_properties(property_analysis)
         
-        # Run AI analysis
+        # Run AI analysis - PASS property_analysis object for data-driven analysis
         ai = PropertyAI()
-        result = ai.analyze_property(analysis_data, comparable_properties)
+        result = ai.analyze_property(analysis_data, comparable_properties, property_analysis)
         
         if result.get('status') == 'success':
             # Save results
