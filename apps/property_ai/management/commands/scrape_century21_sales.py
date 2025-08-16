@@ -55,19 +55,26 @@ class Command(BaseCommand):
                         neighborhood=data.get('neighborhood', ''),
                         asking_price=data['price'],
                         property_type=data['property_type'],
-                        total_area=data['square_meters'],
+                        total_area=data['total_area'],
+                        internal_area=data.get('internal_area'),
+                        bedrooms=data.get('bedrooms'),
                         property_condition=data['condition'],
                         floor_level=data['floor_level'],
-                        # NEW: Agent fields
+                        # Agent fields
                         agent_name=data.get('agent_name', ''),
                         agent_email=data.get('agent_email', ''),
                         agent_phone=data.get('agent_phone', ''),
                         status='analyzing'
                     )
                     
-                    # Enhanced logging with agent info
-                    area_info = f"{data['square_meters']}m²" if data['square_meters'] else "No area"
-                    price_per_sqm = f"€{int(data['price']/data['square_meters'])}/m²" if data['square_meters'] else ""
+                    # Enhanced logging with new data
+                    area_info = f"{data['total_area']}m²" if data['total_area'] else "No area"
+                    if data.get('internal_area'):
+                        area_info += f" ({data['internal_area']}m² internal)"
+                    if data.get('bedrooms'):
+                        area_info += f" | {data['bedrooms']}BR"
+                    
+                    price_per_sqm = f"€{int(data['price']/data['total_area'])}/m²" if data['total_area'] else ""
                     neighborhood_info = f" | {data['neighborhood']}" if data.get('neighborhood') else ""
                     
                     # Agent info

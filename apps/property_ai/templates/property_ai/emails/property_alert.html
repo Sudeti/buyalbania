@@ -130,7 +130,7 @@
 
         <p>Hi {{ user.first_name|default:user.username }},</p>
 
-        <p>Our AI has identified {{ property_count }} new property{{ property_count|pluralize }} that represent excellent investment opportunities. These properties are priced significantly below the market average for their location.</p>
+        <p>We've found {{ property_count }} new property{{ property_count|pluralize }} that are priced at least 10% below the market average for their location. These could be great investment opportunities!</p>
 
         {% for property in properties %}
         <div class="property-card">
@@ -167,6 +167,8 @@
             
             {% if property.recommendation %}
             <p><strong>Recommendation:</strong> {{ property.recommendation|title }}</p>
+            {% else %}
+            <p><strong>Status:</strong> <span class="text-warning">New listing - analysis pending</span></p>
             {% endif %}
             
             <a href="{{ site_url }}{% url 'property_ai:analysis_detail' analysis_id=property.id %}" class="cta-button">
@@ -182,7 +184,7 @@
         </div>
 
         <div class="footer">
-            <p>These alerts are based on your preferences and market analysis.</p>
+            <p>These alerts are based on price positioning vs market averages and your location preferences.</p>
             <p>Happy investing!</p>
             <p><strong>The PropertyAI Team</strong></p>
             

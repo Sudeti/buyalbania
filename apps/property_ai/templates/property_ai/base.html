@@ -306,6 +306,17 @@
                                     <i class="bi bi-bar-chart me-2"></i>Analytics Dashboard
                                 </a></li>
                                 
+                                {% if user.is_superuser %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-warning" href="{% url 'property_ai:admin_agent_analytics' %}">
+                                        <i class="bi bi-people me-2"></i>Agent Analytics
+                                    </a></li>
+                                    <li><a class="dropdown-item text-warning" href="{% url 'property_ai:admin_property_rankings' %}">
+                                        <i class="bi bi-trophy me-2"></i>Property Rankings
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                
                                 <li><a class="dropdown-item" href="{% url 'accounts:user_profile' %}">
                                     <i class="bi bi-person me-2"></i>Profile & Settings
                                 </a></li>

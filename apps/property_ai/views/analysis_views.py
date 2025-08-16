@@ -4,11 +4,13 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Avg, Count
+from django.utils import timezone
+from datetime import timedelta
 from ..models import PropertyAnalysis
 from ..ai_engine import PropertyAI
 from ..scrapers import Century21AlbaniaScraper
 import logging
-
+from decimal import Decimal
 
 
 logger = logging.getLogger(__name__)
@@ -42,14 +44,6 @@ def analyze_property(request):
         return redirect('accounts:user_profile')
     
     profile = request.user.profile
-    if not profile.can_analyze_property():
-        tier_info = {
-            'free': 'You\'ve used your 1 free analysis this month. Upgrade to Basic (€5) for 10 analyses per month!',
-            'basic': 'You\'ve used all 10 analyses this month. Upgrade to Premium (€15) for unlimited analyses!',
-        }
-        messages.error(request, tier_info.get(profile.subscription_tier, 'Analysis quota exceeded.'))
-        return redirect('property_ai:analyze_property')
-    
     property_url = request.POST.get('property_url', '').strip()
     
     if not property_url:
@@ -76,116 +70,252 @@ def analyze_property(request):
         elif existing_user_analysis.status == 'analyzing':
             messages.warning(request, 'Analysis already in progress. Please wait.')
             return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
-        
-    # Check if property exists globally (but user can't see others' analyses)
+    
+    # Check if property exists globally
     existing_global_analysis = PropertyAnalysis.objects.filter(property_url=property_url).first()
     
+    logger.debug(f"User {request.user.username} (tier: {profile.subscription_tier}) analyzing {property_url}")
+    logger.debug(f"Existing global analysis: {existing_global_analysis is not None}")
+    if existing_global_analysis:
+        logger.debug(f"Global analysis status: {existing_global_analysis.status}, created: {existing_global_analysis.created_at}")
+    
+    # If there's a completed analysis globally, redirect to it
+    if existing_global_analysis and existing_global_analysis.status == 'completed':
+        logger.debug(f"User {request.user.username} accessing existing global analysis")
+        # Check if user has access to this analysis based on their tier
+        if existing_global_analysis.is_available_to_user(request.user):
+            messages.success(request, 'Analysis found! You can access this property analysis without using your quota.')
+            return redirect('property_ai:analysis_detail', analysis_id=existing_global_analysis.id)
+        else:
+            messages.error(request, 'This analysis exists but you need to upgrade your account to access it.')
+            return redirect('property_ai:analyze_property')
+    
+    # If no existing analysis, inform user that a new analysis will be created
+    if not existing_global_analysis:
+        messages.info(request, 'No existing analysis found. Creating a new analysis for this property...')
+    
+    # Only check quota if we need to create a new analysis
+    if not profile.can_analyze_property():
+        logger.debug(f"User {request.user.username} quota exceeded. Tier: {profile.subscription_tier}, Used: {profile.monthly_analyses_used}")
+        tier_info = {
+            'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€5) for 10 analyses per month!',
+            'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€15) for unlimited analyses!',
+        }
+        messages.error(request, tier_info.get(profile.subscription_tier, 'Analysis quota exceeded.'))
+        return redirect('property_ai:analyze_property')
+    
+    logger.debug(f"User {request.user.username} can analyze. Proceeding with new analysis.")
+    
     try:
-        # If property exists globally, create a new user-specific analysis
+        logger.debug(f"Starting analysis process for {request.user.username}")
+        # If property exists globally but analysis is incomplete, update the existing record
         if existing_global_analysis:
-            # Use existing scraped data but create new analysis for this user
-            analysis = PropertyAnalysis.objects.create(
-                user=request.user,
-                scraped_by=request.user,
-                property_url=property_url,
-                property_title=existing_global_analysis.property_title,
-                property_location=existing_global_analysis.property_location,
-                neighborhood=existing_global_analysis.neighborhood,
-                asking_price=existing_global_analysis.asking_price,
-                property_type=existing_global_analysis.property_type,
-                total_area=existing_global_analysis.total_area,
-                property_condition=existing_global_analysis.property_condition,
-                floor_level=existing_global_analysis.floor_level,
-
-                agent_name=existing_global_analysis.agent_name,
-                agent_email=existing_global_analysis.agent_email,
-                agent_phone=existing_global_analysis.agent_phone,
-                status='analyzing'
-            )
+            logger.debug(f"Updating existing global analysis for {request.user.username}")
+            # Update the existing analysis record
+            analysis = existing_global_analysis
+            analysis.user = request.user  # Set the current user as the requester
+            analysis.status = 'analyzing'
+            analysis.save()
             
             messages.info(request, 'Using existing property data. Running your personalized analysis...')
         else:
+            logger.debug(f"Scraping new property data for {request.user.username}")
             # Scrape new property
-            scraper = Century21AlbaniaScraper()
-            property_data = scraper.scrape_property(property_url)
+            try:
+                scraper = Century21AlbaniaScraper()
+                property_data = scraper.scrape_property(property_url)
+            except Exception as e:
+                logger.error(f"Error creating scraper or scraping property: {e}")
+                messages.error(request, 'Error accessing property website. Please try again.')
+                return redirect('property_ai:analyze_property')
             
             if not property_data:
+                logger.error(f"Failed to scrape property data for {property_url}")
                 messages.error(request, 'Could not access this property.')
                 return redirect('property_ai:analyze_property')
             
-            analysis = PropertyAnalysis.objects.create(
-                user=request.user,
-                scraped_by=request.user,
-                property_url=property_url,
-                property_title=property_data['title'],
-                property_location=property_data['location'],
-                neighborhood=property_data.get('neighborhood', ''),
-                asking_price=property_data['price'],
-                property_type=property_data['property_type'],
-                total_area=property_data.get('square_meters'),
-                property_condition=property_data.get('condition', ''),
-                floor_level=property_data.get('floor_level', ''),
+            logger.debug(f"Successfully scraped property data for {request.user.username}")
+            try:
+                analysis = PropertyAnalysis.objects.create(
+                    user=request.user,
+                    scraped_by=request.user,
+                    property_url=property_url,
+                    property_title=property_data['title'],
+                    property_location=property_data['location'],
+                    neighborhood=property_data.get('neighborhood', ''),
+                    asking_price=property_data['price'],
+                    property_type=property_data['property_type'],
+                    total_area=property_data.get('square_meters'),
+                    internal_area=property_data.get('internal_area'),
+                    bedrooms=property_data.get('bedrooms'),
+                    bathrooms=property_data.get('bathrooms'),
+                    floor_level=property_data.get('floor_level', ''),
+                    ceiling_height=property_data.get('ceiling_height'),
+                    facade_length=property_data.get('facade_length'),
+                    property_condition=property_data.get('condition', ''),
+                    furnished=property_data.get('furnished'),
+                    has_elevator=property_data.get('has_elevator'),
+                    description=property_data.get('description', ''),
 
-                agent_name=property_data.get('agent_name', ''),
-                agent_email=property_data.get('agent_email', ''),
-                agent_phone=property_data.get('agent_phone', ''),
-                status='analyzing'
-            )
+                    agent_name=property_data.get('agent_name', ''),
+                    agent_email=property_data.get('agent_email', ''),
+                    agent_phone=property_data.get('agent_phone', ''),
+                    status='analyzing'
+                )
+            except Exception as e:
+                logger.error(f"Error creating PropertyAnalysis record: {e}")
+                messages.error(request, 'Error saving property data. Please try again.')
+                return redirect('property_ai:analyze_property')
         
         # CONSUME QUOTA BEFORE RUNNING ANALYSIS
-        if not profile.use_analysis_quota():
-            messages.error(request, 'Could not consume analysis quota. Please try again.')
+        logger.debug(f"Attempting to consume quota for {request.user.username}. Current usage: {profile.monthly_analyses_used}")
+        try:
+            if not profile.use_analysis_quota():
+                logger.error(f"Failed to consume quota for {request.user.username}")
+                messages.error(request, 'Could not consume analysis quota. Please try again.')
+                analysis.delete()  # Clean up
+                return redirect('property_ai:analyze_property')
+        except Exception as e:
+            logger.error(f"Error consuming quota: {e}")
+            messages.error(request, 'Error with analysis quota. Please try again.')
             analysis.delete()  # Clean up
             return redirect('property_ai:analyze_property')
         
+        logger.debug(f"Successfully consumed quota for {request.user.username}. New usage: {profile.monthly_analyses_used}")
+        
         # Run AI analysis with enhanced analytics
-        ai = PropertyAI()
-        comparable_properties = get_comparable_properties(analysis)
+        logger.debug(f"Starting AI analysis for {request.user.username}")
+        
+        try:
+            ai = PropertyAI()
+        except Exception as e:
+            logger.error(f"Error creating AI engine: {e}")
+            messages.error(request, 'Error initializing AI analysis. Please try again.')
+            # Refund the quota since we couldn't even start
+            profile.monthly_analyses_used = max(0, profile.monthly_analyses_used - 1)
+            profile.save()
+            analysis.status = 'failed'
+            analysis.save()
+            return redirect('property_ai:analyze_property')
+        
+        try:
+            comparable_properties = get_comparable_properties(analysis)
+        except Exception as e:
+            logger.error(f"Error getting comparable properties: {e}")
+            comparable_properties = []  # Use empty list as fallback
         
         analysis_data = {
-            'title': analysis.property_title,
-            'location': analysis.property_location,
-            'neighborhood': analysis.neighborhood,
-            'price': float(analysis.asking_price),
-            'property_type': analysis.property_type,
-            'square_meters': analysis.total_area,
-            'condition': analysis.property_condition,
-            'floor_level': analysis.floor_level,
+            'title': getattr(analysis, 'property_title', ''),
+            'location': getattr(analysis, 'property_location', ''),
+            'neighborhood': getattr(analysis, 'neighborhood', ''),
+            'price': float(getattr(analysis, 'asking_price', 0)),
+            'property_type': getattr(analysis, 'property_type', ''),
+            'square_meters': getattr(analysis, 'total_area', 0),
+            'condition': getattr(analysis, 'property_condition', ''),
+            'floor_level': getattr(analysis, 'floor_level', ''),
         }
         
         # Pass the property_analysis object for enhanced analytics
-        result = ai.analyze_property(analysis_data, comparable_properties, property_analysis=analysis)
+        try:
+            result = ai.analyze_property(analysis_data, comparable_properties, property_analysis=analysis)
+        except Exception as e:
+            logger.error(f"Error in AI analysis: {e}")
+            result = {"status": "error", "message": str(e)}
+        
+        logger.debug(f"AI analysis result for {request.user.username}: {result.get('status')}")
         
         if result.get('status') == 'success':
-            analysis.analysis_result = result
-            analysis.ai_summary = result.get('summary', '')
-            analysis.investment_score = result.get('investment_score')
-            analysis.recommendation = result.get('recommendation')
-            
-            # Store enhanced analytics data
-            analysis.market_opportunity_score = result.get('market_opportunity_score')
-            analysis.price_percentile = result.get('price_analysis', {}).get('price_percentile')
-            analysis.market_position_percentage = result.get('price_analysis', {}).get('market_position_percentage')
-            analysis.negotiation_leverage = result.get('negotiation_leverage')
-            analysis.market_sentiment = result.get('market_insights', [])
-            
-            analysis.status = 'completed'
-            analysis.save()
-            
-            messages.success(request, f'Analysis complete! You have {profile.remaining_analyses} analyses remaining this month.')
-            return redirect('property_ai:analysis_detail', analysis_id=analysis.id)
+            logger.debug(f"AI analysis successful for {request.user.username}")
+            try:
+                analysis.analysis_result = result
+                analysis.ai_summary = result.get('summary', '')
+                
+                # Convert investment_score to integer
+                investment_score = result.get('investment_score')
+                if investment_score is not None:
+                    try:
+                        analysis.investment_score = int(investment_score)
+                    except (ValueError, TypeError):
+                        logger.warning(f"Invalid investment_score value: {investment_score}")
+                        analysis.investment_score = None
+                
+                analysis.recommendation = result.get('recommendation')
+                
+                # Validate recommendation field
+                valid_recommendations = ['strong_buy', 'buy', 'hold', 'avoid']
+                if analysis.recommendation not in valid_recommendations:
+                    logger.warning(f"Invalid recommendation value: {analysis.recommendation}")
+                    analysis.recommendation = 'hold'  # Default to hold
+                
+                # Store enhanced analytics data with proper type conversion
+                market_opportunity_score = result.get('market_opportunity_score')
+                if market_opportunity_score is not None:
+                    analysis.market_opportunity_score = Decimal(str(market_opportunity_score))
+                
+                price_analysis = result.get('price_analysis', {})
+                price_percentile = price_analysis.get('price_percentile')
+                if price_percentile is not None:
+                    analysis.price_percentile = Decimal(str(price_percentile))
+                
+                market_position_percentage = price_analysis.get('market_position_percentage')
+                if market_position_percentage is not None:
+                    analysis.market_position_percentage = Decimal(str(market_position_percentage))
+                
+                analysis.negotiation_leverage = result.get('negotiation_leverage')
+                
+                # Validate negotiation_leverage field
+                valid_leverage = ['high', 'medium', 'low']
+                if analysis.negotiation_leverage not in valid_leverage:
+                    logger.warning(f"Invalid negotiation_leverage value: {analysis.negotiation_leverage}")
+                    analysis.negotiation_leverage = 'medium'  # Default to medium
+                
+                # Fix market_sentiment - it should be a string, not a list
+                market_sentiment = result.get('market_sentiment')
+                if market_sentiment and market_sentiment in ['bullish', 'neutral', 'bearish']:
+                    analysis.market_sentiment = market_sentiment
+                
+                analysis.status = 'completed'
+                analysis.save()
+                
+                logger.debug(f"Analysis completed successfully for {request.user.username}")
+                messages.success(request, f'Analysis complete! You have {profile.remaining_analyses} analyses remaining this month.')
+                return redirect('property_ai:analysis_detail', analysis_id=analysis.id)
+            except Exception as e:
+                logger.error(f"Error saving analysis results: {e}")
+                logger.error(f"Result data: {result}")
+                messages.error(request, 'Error saving analysis results. Please try again.')
+                # Refund the quota since we couldn't save
+                profile.monthly_analyses_used = max(0, profile.monthly_analyses_used - 1)
+                profile.save()
+                analysis.status = 'failed'
+                analysis.save()
+                return redirect('property_ai:analyze_property')
         else:
-            analysis.status = 'failed'
-            analysis.save()
-            messages.error(request, 'Analysis failed. Your quota has not been consumed.')
-            # Refund the quota since analysis failed
-            profile.monthly_analyses_used = max(0, profile.monthly_analyses_used - 1)
-            profile.save()
+            logger.error(f"AI analysis failed for {request.user.username}: {result.get('message', 'Unknown error')}")
+            try:
+                analysis.status = 'failed'
+                analysis.save()
+                messages.error(request, 'Analysis failed. Your quota has not been consumed.')
+                # Refund the quota since analysis failed
+                profile.monthly_analyses_used = max(0, profile.monthly_analyses_used - 1)
+                profile.save()
+                logger.debug(f"Refunded quota for {request.user.username}. New usage: {profile.monthly_analyses_used}")
+            except Exception as e:
+                logger.error(f"Error saving failed analysis status: {e}")
+                messages.error(request, 'Analysis failed and there was an error processing the result.')
             return redirect('property_ai:analyze_property')
             
     except Exception as e:
         logger.error(f"Error analyzing property {property_url}: {e}")
-        messages.error(request, 'Error accessing property. Please try again.')
+        # Add more specific error handling
+        if 'scraper' in str(e).lower() or 'scrape' in str(e).lower():
+            messages.error(request, 'Error accessing property website. The property may no longer be available.')
+        elif 'quota' in str(e).lower():
+            messages.error(request, 'Error with analysis quota. Please try again.')
+        elif 'ai' in str(e).lower() or 'analysis' in str(e).lower():
+            messages.error(request, 'Error running AI analysis. Please try again.')
+        else:
+            messages.error(request, 'Error accessing property. Please try again.')
         return redirect('property_ai:analyze_property')
 
 
@@ -238,37 +368,59 @@ def my_analyses(request):
 def get_comparable_properties(analysis):
     """Get comparable properties for analysis context"""
     try:
+        logger.debug(f"Getting comparable properties for analysis {analysis.id}")
+        
+        # Safely get location and property type
+        location = getattr(analysis, 'property_location', '')
+        property_type = getattr(analysis, 'property_type', '')
+        
+        if not location:
+            logger.warning(f"No location found for analysis {analysis.id}")
+            return []
+        
         # Find similar properties in same location and type
         comparables = PropertyAnalysis.objects.filter(
-            property_location__icontains=analysis.property_location.split(',')[0],  # Main city
-            property_type=analysis.property_type,
+            property_location__icontains=location.split(',')[0],  # Main city
             status='completed',
             asking_price__gt=0
         ).exclude(id=analysis.id)
         
+        # Add property type filter if available
+        if property_type:
+            comparables = comparables.filter(property_type=property_type)
+        
         # Filter by similar size if available
-        if analysis.usable_area:
-            size_range = analysis.usable_area * 0.3  # ±30% size difference
-            comparables = comparables.filter(
-                Q(total_area__range=(analysis.usable_area - size_range, analysis.usable_area + size_range)) |
-                Q(internal_area__range=(analysis.usable_area - size_range, analysis.usable_area + size_range))
-            )
+        try:
+            usable_area = getattr(analysis, 'usable_area', None)
+            if usable_area and usable_area > 0:
+                size_range = usable_area * 0.3  # ±30% size difference
+                comparables = comparables.filter(
+                    Q(total_area__range=(usable_area - size_range, usable_area + size_range)) |
+                    Q(internal_area__range=(usable_area - size_range, usable_area + size_range))
+                )
+        except Exception as e:
+            logger.warning(f"Error filtering by size: {e}")
         
         # Get top 5 most recent comparables
         comparables = comparables.order_by('-created_at')[:5]
         
         comparable_data = []
         for comp in comparables:
-            comparable_data.append({
-                'title': comp.property_title,
-                'location': comp.property_location,
-                'price': float(comp.asking_price),
-                'area': comp.usable_area,
-                'price_per_sqm': comp.price_per_sqm,
-                'investment_score': comp.investment_score,
-                'recommendation': comp.recommendation,
-            })
+            try:
+                comparable_data.append({
+                    'title': getattr(comp, 'property_title', ''),
+                    'location': getattr(comp, 'property_location', ''),
+                    'price': float(getattr(comp, 'asking_price', 0)),
+                    'area': getattr(comp, 'usable_area', 0),
+                    'price_per_sqm': getattr(comp, 'price_per_sqm', 0),
+                    'investment_score': getattr(comp, 'investment_score', 0),
+                    'recommendation': getattr(comp, 'recommendation', ''),
+                })
+            except Exception as e:
+                logger.warning(f"Error processing comparable property {comp.id}: {e}")
+                continue
         
+        logger.debug(f"Found {len(comparable_data)} comparable properties")
         return comparable_data
         
     except Exception as e:
@@ -310,14 +462,18 @@ def analysis_detail(request, analysis_id):
     
     market_analytics = {}
     if analysis.status == 'completed':
-        location = analysis.property_location.split(',')[0]
-        market_analytics = {
-            'market_stats': analytics.get_location_market_stats(location, analysis.property_type),
-            'comparable_analysis': analytics.get_comparable_analysis(analysis),
-            'opportunity_analysis': analytics.get_market_opportunity_score(analysis),
-            'negotiation_insights': analytics.get_negotiation_insights(analysis),
-            'price_trends': analytics.get_price_trends(location, analysis.property_type, months=6)
-        }
+        try:
+            location = analysis.property_location.split(',')[0]
+            market_analytics = {
+                'market_stats': analytics.get_location_market_stats(location, analysis.property_type),
+                'comparable_analysis': analytics.get_comparable_analysis(analysis),
+                'opportunity_analysis': analytics.get_market_opportunity_score(analysis),
+                'negotiation_insights': analytics.get_negotiation_insights(analysis),
+                'price_trends': analytics.get_price_trends(location, analysis.property_type, months=6)
+            }
+        except Exception as e:
+            logger.error(f"Error getting market analytics: {e}")
+            market_analytics = {}
     
     context = {
         'analysis': analysis,

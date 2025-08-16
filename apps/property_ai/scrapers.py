@@ -98,6 +98,9 @@ class Century21AlbaniaScraper:
                 logger.debug(f"No sale indicators found: {url}")
                 return None
             
+            # Extract area data (now returns both total and internal)
+            area_data = self._extract_area(text)
+            
             # Extract data for sale properties
             extracted_data = {
                 'url': url,
@@ -106,7 +109,10 @@ class Century21AlbaniaScraper:
                 'location': self._extract_location(text),
                 'neighborhood': self._extract_neighborhood(text),
                 'property_type': self._extract_type(text),
-                'square_meters': self._extract_area(text),
+                'total_area': area_data['total_area'],
+                'internal_area': area_data['internal_area'],
+                'square_meters': area_data['total_area'],  # Keep for backward compatibility
+                'bedrooms': self._extract_bedrooms(text),
                 'condition': self._extract_condition(text),
                 'floor_level': self._extract_floor(text),
 
@@ -120,6 +126,10 @@ class Century21AlbaniaScraper:
                 agent_info = ""
                 if extracted_data['agent_name']:
                     agent_info = f" (Agent: {extracted_data['agent_name']})"
+                if extracted_data['agent_email']:
+                    agent_info += f" [Email: {extracted_data['agent_email']}]"
+                if extracted_data['agent_phone']:
+                    agent_info += f" [Phone: {extracted_data['agent_phone']}]"
                 logger.info(f"✅ Sale property extracted: {extracted_data['title'][:50]}...{agent_info}")
                 return extracted_data
             else:
@@ -144,9 +154,8 @@ class Century21AlbaniaScraper:
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?LicensÃ«',      # Name before License
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?Agjent',       # Name before Agjent - NEW
             r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@century21atrium\.com',
-            
-            # Even simpler patterns
-            r'([A-Z][a-z]{2,15} [A-Z][a-z]{2,15})\s*\n',      # Two capitalized words followed by newline
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@hotmail\.com', # Name before hotmail email - NEW
+            r'([A-Z][a-z]+ [A-Z][a-z]+)\s*\n.*?@gmail\.com',  # Name before gmail email - NEW
         ]
         
         for pattern in name_patterns:
@@ -172,38 +181,27 @@ class Century21AlbaniaScraper:
                     logger.info(f"✅ Found agent name near email: {cleaned_name}")
                     return cleaned_name
         
+        # Method 3: Look for agent names in agent section specifically
+        agent_section_patterns = [
+            r'Agent\s*\n\s*([A-Z][a-z]+ [A-Z][a-z]+)',  # Agent\nEdison Shehaj
+            r'Agjent\s*\n\s*([A-Z][a-z]+ [A-Z][a-z]+)', # Agjent\nEdison Shehaj
+        ]
+        
+        for pattern in agent_section_patterns:
+            matches = re.findall(pattern, text, re.MULTILINE)
+            for match in matches:
+                cleaned_name = self._clean_agent_name(match)
+                if cleaned_name and self._is_valid_agent_name(cleaned_name):
+                    logger.info(f"✅ Found agent name in agent section: {cleaned_name}")
+                    return cleaned_name
+        
         return None
         
 
     def _extract_agent_email(self, soup, text):
-        """Extract agent email - Simple direct approach like phone extraction"""
-        
-        # Method 1: Try HTML mailto links first (same as phone)
-        email_links = soup.find_all('a', href=True)
-        for link in email_links:
-            href = link.get('href', '')
-            if href.startswith('mailto:'):
-                email = href.replace('mailto:', '').strip()
-                if self._is_valid_email(email):
-                    logger.info(f"✅ Found email in mailto: {email}")
-                    return email.lower()
-        
-        # Method 2: Simple email patterns directly in text (same as phone)
-        email_patterns = [
-            r'([a-zA-Z0-9._%+-]+@c21cpm\.al)',     # Century21 emails first
-            r'([a-zA-Z0-9._%+-]+@c21roy\.al)', 
-            r'([a-zA-Z0-9._%+-]+@century21atrium\.com)',
-            r'([a-zA-Z0-9._%+-]+@gmail\.com)',     # Gmail emails
-            r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',  # Any email
-        ]
-        
-        for pattern in email_patterns:
-            matches = re.findall(pattern, text, re.IGNORECASE)
-            for match in matches:
-                if self._is_valid_email(match):
-                    logger.info(f"✅ Found email with pattern: {match}")
-                    return match.lower()
-        
+        """Extract agent email - DISABLED due to website obfuscation"""
+        # Email extraction disabled - website uses obfuscation to prevent spam
+        # Emails are displayed as [email protected] instead of real addresses
         return None
 
     def _clean_agent_name(self, name):
@@ -246,14 +244,15 @@ class Century21AlbaniaScraper:
         ]
         
         # Try HTML tel: links first
-        phone_links = soup.find_all('a', href=True)
-        for link in phone_links:
-            href = link.get('href', '')
-            if href.startswith('tel:'):
-                phone = href.replace('tel:', '').strip()
-                cleaned = self._clean_phone_number(phone)
-                if cleaned:
-                    return cleaned
+        if soup:
+            phone_links = soup.find_all('a', href=True)
+            for link in phone_links:
+                href = link.get('href', '')
+                if href.startswith('tel:'):
+                    phone = href.replace('tel:', '').strip()
+                    cleaned = self._clean_phone_number(phone)
+                    if cleaned:
+                        return cleaned
         
         # Try regex patterns
         for pattern in phone_patterns:
@@ -288,20 +287,13 @@ class Century21AlbaniaScraper:
         return None
 
     def _is_valid_email(self, email):
-        """Enhanced email validation"""
+        """Basic email validation - kept for manual entry"""
         if not email:
             return False
         
         # Basic email format check
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_regex, email):
-            return False
-        
-        # Check length
-        if len(email) > 100:
-            return False
-        
-        return True
+        return bool(re.match(email_regex, email))
 
     def _extract_title(self, soup):
         """Extract title - IMPROVED ALBANIAN"""
@@ -508,25 +500,31 @@ class Century21AlbaniaScraper:
             'Blloku', 'Qendra', 'Don Bosko', 'Komuna e Parisit', 'Kombinat', 
             'Astir', 'Fresku', 'Paskuqan', 'Sauk', 'Lapraka', 'Kinostudio',
             'Selitë', 'Porcelan', 'Gjeni', 'Yzberisht', 'Farkë', 'Spitallë', 
-            'Spitalle', 'Plazh',
+            'Spitalle', 'Plazh', 'Shkoze', 'Shkozë',  # Added Shkoze/Shkozë
             
             # Durrës neighborhoods
             'Porto Romano', 'Shkembi Kavajes', 'Qerret',
             
             # Vlorë neighborhoods  
-            'Jonufër', 'Skelë'
+            'Jonufër', 'Skelë', 'Rradhimë', 'Radhime'  # Added Rradhimë/Radhime
         ]
         
-        text_lower = text.lower()
-        for neighborhood in neighborhoods:
-            if neighborhood.lower() in text_lower:
-                return neighborhood
+        # Look for "ne" patterns FIRST (common in Albanian addresses like "NE RADHIME")
+        ne_match = re.search(r'ne\s+([A-Za-zë\s]+)', text, re.IGNORECASE)
+        if ne_match:
+            area_name = ne_match.group(1).strip()
+            if 3 < len(area_name) < 30:
+                # Normalize the case (RADHIME -> Rradhimë)
+                normalized_name = self._normalize_neighborhood_name(area_name)
+                logger.info(f"✅ Found neighborhood from 'ne': {normalized_name}")
+                return normalized_name
         
         # Look for "Lagjja" (neighborhood) pattern
         lagjja_match = re.search(r'Lagjja\s+([A-Za-zë\s]+)', text, re.IGNORECASE)
         if lagjja_match:
             neighborhood_name = lagjja_match.group(1).strip()
             if 3 < len(neighborhood_name) < 30:  # Reasonable length
+                logger.info(f"✅ Found neighborhood from Lagjja: {neighborhood_name}")
                 return neighborhood_name
         
         # Look for "tek" patterns (common in Albanian addresses)
@@ -534,20 +532,45 @@ class Century21AlbaniaScraper:
         if tek_match:
             area_name = tek_match.group(1).strip()
             if 3 < len(area_name) < 30:
+                logger.info(f"✅ Found neighborhood from 'tek': {area_name}")
                 return area_name
         
+        # Look for neighborhood keywords in text
+        text_lower = text.lower()
+        for neighborhood in neighborhoods:
+            if neighborhood.lower() in text_lower:
+                logger.info(f"✅ Found neighborhood: {neighborhood}")
+                return neighborhood
+        
         return None  # Return None for nullable field
+    
+    def _normalize_neighborhood_name(self, name):
+        """Normalize neighborhood names to standard format"""
+        name_lower = name.lower().strip()
+        
+        # Map variations to standard names
+        neighborhood_map = {
+            'radhime': 'Rradhimë',
+            'shkoze': 'Shkozë',
+            'vlore': 'Vlorë',
+            'tirane': 'Tirana',
+            'durres': 'Durrës',
+            'shkoder': 'Shkodër',
+            'korce': 'Korçë',
+        }
+        
+        return neighborhood_map.get(name_lower, name.title())
 
     def _extract_type(self, text):
-        """Extract property type - IMPROVED WITH BETTER PRIORITY"""
+        """Extract property type - RESPECTS LLOJI FIELD"""
         text_lower = text.lower()
         
         # Method 1: Look for "Lloji" (Type) field first - MOST ACCURATE
         lloji_patterns = [
-            r'lloji\s*:\s*([a-zA-Zë\s]+)',  # Lloji: Apartament
-            r'lloji\s+([a-zA-Zë\s]+)',      # Lloji Apartament
-            r'type\s*:\s*([a-zA-Zë\s]+)',   # Type: Apartment
-            r'type\s+([a-zA-Zë\s]+)',       # Type Apartment
+            r'lloji\s*:\s*([a-zA-Zë]+)',  # Lloji: Apartament
+            r'lloji\s+([a-zA-Zë]+)',      # Lloji Apartament
+            r'type\s*:\s*([a-zA-Zë]+)',   # Type: Apartment
+            r'type\s+([a-zA-Zë]+)',       # Type Apartment
         ]
         
         for pattern in lloji_patterns:
@@ -556,7 +579,7 @@ class Century21AlbaniaScraper:
                 property_type = match.group(1).strip().lower()
                 logger.info(f"✅ Found property type from Lloji field: {property_type}")
                 
-                # Map Albanian types to our categories
+                # Map Albanian types to our categories - RESPECT THE LLOJI FIELD
                 if 'apartament' in property_type:
                     return 'apartment'
                 elif 'studio' in property_type:
@@ -567,7 +590,7 @@ class Century21AlbaniaScraper:
                     return 'commercial'
                 elif any(word in property_type for word in ['zyre', 'office']):
                     return 'office'
-                elif any(word in property_type for word in ['truall', 'toke']):
+                elif any(word in property_type for word in ['truall', 'toke', 'tokë']):
                     return 'land'
         
         # Method 2: Fallback to keyword search if no Lloji field found
@@ -581,39 +604,121 @@ class Century21AlbaniaScraper:
             return 'commercial'
         elif any(phrase in text_lower for phrase in ['zyra pune', 'office space', 'zyre pune', 'biznes zyre']):
             return 'office'
-        elif any(word in text_lower for word in ['truall', 'toke', 'land']):
+        elif any(word in text_lower for word in ['truall', 'toke', 'tokë', 'land']):
             return 'land'
         
         return 'residential'  # Default fallback
     
     def _extract_area(self, text):
-        """Enhanced area extraction for Albanian format"""
-        patterns = [
-            r'Sip\.\s*(?:Totale|e brendshme|totale)\s*(\d+)\s*m[²2]?',  # Albanian format
-            r'sipërfaqe[:\s]*(\d+)\s*m[²2]?',  # Albanian "surface area"
-            r'(\d+)\s*m[²2]',  # Generic format
-            r'(\d+)\s*metr.*katror',  # Albanian "square meters"
-            r'(\d+)\s*m2',  # Simple m2
+        """Enhanced area extraction for Albanian format - NOW EXTRACTS BOTH TOTAL AND INTERNAL"""
+        # First, clean the text to remove related properties section
+        clean_text = self._remove_related_properties_section(text)
+        
+        total_area = None
+        internal_area = None
+        
+        # Extract total area (Sip. Totale) - MORE SPECIFIC PATTERNS
+        total_patterns = [
+            r'Sip\.\s*Totale\s*(\d+)\s*m[²2]?',  # Sip. Totale 73m2
+            r'sipërfaqe\s*totale[:\s]*(\d+)\s*m[²2]?',  # sipërfaqe totale: 73m2
+            r'total\s*area[:\s]*(\d+)\s*m[²2]?',  # total area: 73m2
+            r'sipërfaqe\s*bruto[:\s]*(\d+)\s*m[²2]?',  # sipërfaqe bruto: 73m2 (from description)
         ]
         
-        areas_found = []
-        for pattern in patterns:
-            matches = re.findall(pattern, text, re.IGNORECASE)
-            for match in matches:
+        for pattern in total_patterns:
+            match = re.search(pattern, clean_text, re.IGNORECASE)
+            if match:
                 try:
-                    area = int(match)
-                    if 10 <= area <= 5000:  # Reasonable range
-                        areas_found.append(area)
+                    total_area = int(match.group(1))
+                    if 10 <= total_area <= 5000:  # Reasonable range
+                        logger.info(f"✅ Found total area: {total_area}m²")
+                        break
                 except:
                     continue
         
-        # Return largest area found (likely total area)
-        return max(areas_found) if areas_found else None
+        # Extract internal area (Sip. e brendshme) - MORE SPECIFIC PATTERNS
+        internal_patterns = [
+            r'Sip\.\s*e\s*brendshme\s*(\d+)\s*m[²2]?',  # Sip. e brendshme 65m2
+            r'Sip\.\s*e\s*brendshme\s+(\d+)\s*m[²2]?',  # Sip. e brendshme  151m2 (extra spaces)
+            r'sipërfaqe\s*e\s*brendshme[:\s]*(\d+)\s*m[²2]?',  # sipërfaqe e brendshme: 65m2
+            r'internal\s*area[:\s]*(\d+)\s*m[²2]?',  # internal area: 65m2
+            r'usable\s*area[:\s]*(\d+)\s*m[²2]?',  # usable area: 65m2
+            r'sipërfaqe\s*neto[:\s]*(\d+)\s*m[²2]?',  # sipërfaqe neto: 65m2 (from description)
+        ]
+        
+        for pattern in internal_patterns:
+            match = re.search(pattern, clean_text, re.IGNORECASE)
+            if match:
+                try:
+                    internal_area = int(match.group(1))
+                    if 10 <= internal_area <= 5000:  # Reasonable range
+                        logger.info(f"✅ Found internal area: {internal_area}m²")
+                        break
+                except:
+                    continue
+        
+        # Fallback: if we only found one type, try generic patterns in main content only
+        if not total_area and not internal_area:
+            # Look for area in the main property info section (before related properties)
+            main_content = clean_text[:2000]  # First 2000 chars should contain main property info
+            
+            generic_patterns = [
+                r'(\d+)\s*m[²2]',  # Generic format
+                r'(\d+)\s*metr.*katror',  # Albanian "square meters"
+                r'(\d+)\s*m2',  # Simple m2
+            ]
+            
+            areas_found = []
+            for pattern in generic_patterns:
+                matches = re.findall(pattern, main_content, re.IGNORECASE)
+                for match in matches:
+                    try:
+                        area = int(match)
+                        if 10 <= area <= 5000:  # Reasonable range
+                            areas_found.append(area)
+                    except:
+                        continue
+            
+            if areas_found:
+                # If we found multiple areas, assume the larger one is total
+                areas_found.sort()
+                if len(areas_found) >= 2:
+                    internal_area = areas_found[0]  # Smaller
+                    total_area = areas_found[-1]    # Larger
+                    logger.info(f"✅ Fallback: internal={internal_area}m², total={total_area}m²")
+                else:
+                    total_area = areas_found[0]
+                    logger.info(f"✅ Fallback: total area only: {total_area}m²")
+        
+        return {
+            'total_area': total_area,
+            'internal_area': internal_area
+        }
     
     def _extract_condition(self, text):
-        """Extract new/used condition"""
+        """Extract new/used condition - IMPROVED ALBANIAN DETECTION"""
         text_lower = text.lower()
         
+        # Look for "Statusi" field first (most accurate)
+        status_patterns = [
+            r'statusi\s*:\s*([a-zA-Zë\s]+)',  # Statusi: I Perdorur
+            r'statusi\s+([a-zA-Zë\s]+)',      # Statusi I Perdorur
+            r'status\s*:\s*([a-zA-Zë\s]+)',   # Status: Used
+            r'status\s+([a-zA-Zë\s]+)',       # Status Used
+        ]
+        
+        for pattern in status_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                status = match.group(1).strip().lower()
+                logger.info(f"✅ Found status from Statusi field: {status}")
+                
+                if any(word in status for word in ['i ri', 'new', 'sapoperfunduar', 'modern']):
+                    return 'new'
+                elif any(word in status for word in ['i perdorur', 'used', 'renovated']):
+                    return 'used'
+        
+        # Fallback to keyword search
         if any(word in text_lower for word in ['i ri', 'new', 'sapoperfunduar', 'modern']):
             return 'new'
         elif any(word in text_lower for word in ['i perdorur', 'used', 'renovated']):
@@ -636,6 +741,42 @@ class Century21AlbaniaScraper:
             return f'floor_{match.group(1)}'
         
         return ''
+    
+    def _extract_bedrooms(self, text):
+        """Extract number of bedrooms"""
+        text_lower = text.lower()
+        
+        # Look for bedroom patterns in Albanian
+        bedroom_patterns = [
+            r'dhomat\s+e\s+gjumit\s*(\d+)',  # Dhomat e gjumit 1
+            r'dhoma\s+e\s+gjumit\s*(\d+)',   # Dhoma e gjumit 1
+            r'bedrooms?\s*(\d+)',            # Bedrooms 1
+            r'bedroom\s*(\d+)',              # Bedroom 1
+        ]
+        
+        for pattern in bedroom_patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                try:
+                    bedrooms = int(match.group(1))
+                    if 0 <= bedrooms <= 20:  # Reasonable range
+                        logger.info(f"✅ Found bedrooms: {bedrooms}")
+                        return bedrooms
+                except:
+                    continue
+        
+        # Look for apartment type patterns like "1+1+2" (1 bedroom, 1 living room, 2 balconies)
+        apartment_pattern = re.search(r'(\d+)\+(\d+)\+(\d+)', text)
+        if apartment_pattern:
+            try:
+                bedrooms = int(apartment_pattern.group(1))
+                if 0 <= bedrooms <= 20:
+                    logger.info(f"✅ Found bedrooms from apartment type: {bedrooms}")
+                    return bedrooms
+            except:
+                pass
+        
+        return None
 
 
 # Backward compatibility

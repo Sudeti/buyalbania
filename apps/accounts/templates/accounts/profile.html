@@ -231,7 +231,7 @@
                                    {% if user.profile.email_property_alerts %}checked{% endif %}>
                             <label class="form-check-label" for="email_property_alerts">
                                 <strong>Property Deal Alerts</strong>
-                                <div class="text-muted small">Get notified about new properties that are 10%+ below market average</div>
+                                <div class="text-muted small">Get notified about new properties priced 10%+ below market average (based on price positioning, not AI analysis)</div>
                             </label>
                         </div>
                         
@@ -247,7 +247,7 @@
                             <label for="min_investment_score" class="form-label small fw-semibold">Minimum Investment Score</label>
                             <input type="number" class="form-control form-control-sm" id="min_investment_score" name="min_investment_score"
                                    value="{{ user.profile.min_investment_score|default:70 }}" min="0" max="100">
-                            <div class="form-text small">Only properties with this score or higher</div>
+                            <div class="form-text small">For analyzed properties only (not used for new property alerts)</div>
                         </div>
                         
                         <div class="mb-3">

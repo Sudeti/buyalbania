@@ -94,7 +94,7 @@ class Command(BaseCommand):
                 data = scraper.scrape_property(url)
                 
                 if data and data['price'] > 0:
-                    # Create property
+                    # Create property with enhanced data
                     PropertyAnalysis.objects.create(
                         user=None,
                         scraped_by=user,
@@ -104,7 +104,9 @@ class Command(BaseCommand):
                         neighborhood=data.get('neighborhood', ''),
                         asking_price=data['price'],
                         property_type=data['property_type'],
-                        total_area=data['square_meters'],
+                        total_area=data['total_area'],
+                        internal_area=data.get('internal_area'),
+                        bedrooms=data.get('bedrooms'),
                         property_condition=data['condition'],
                         floor_level=data['floor_level'],
                         agent_name=data.get('agent_name', ''),
@@ -116,9 +118,17 @@ class Command(BaseCommand):
                     successful += 1
                     consecutive_failures = 0  # Reset failure counter
                     
-                    # Log good properties
-                    agent_info = f" | Agent: {data.get('agent_name', 'N/A')}" if data.get('agent_name') else ""
-                    self.stdout.write(f"  ✅ {i}/{len(new_urls)}: €{data['price']:,} - {data['title'][:30]}...{agent_info}")
+                    # Enhanced logging with new data
+                    area_info = f"{data['total_area']}m²"
+                    if data.get('internal_area'):
+                        area_info += f" ({data['internal_area']}m² internal)"
+                    if data.get('bedrooms'):
+                        area_info += f" | {data['bedrooms']}BR"
+                    
+                    neighborhood_info = f" | {data.get('neighborhood', '')}" if data.get('neighborhood') else ""
+                    agent_info = f" | Agent: {data.get('agent_name', 'N/A')}"
+                    
+                    self.stdout.write(f"  ✅ {i}/{len(new_urls)}: €{data['price']:,} - {data['title'][:30]}... | {area_info}{neighborhood_info}{agent_info}")
                     
                 else:
                     failed += 1
@@ -244,9 +254,15 @@ class Command(BaseCommand):
         """Show comprehensive statistics"""
         total = PropertyAnalysis.objects.count()
         with_agents = PropertyAnalysis.objects.exclude(agent_name='').count()
-        with_emails = PropertyAnalysis.objects.exclude(agent_email='').count()
+        with_phones = PropertyAnalysis.objects.exclude(agent_phone='').count()
+        with_internal_area = PropertyAnalysis.objects.exclude(internal_area__isnull=True).count()
+        with_bedrooms = PropertyAnalysis.objects.exclude(bedrooms__isnull=True).count()
+        with_neighborhood = PropertyAnalysis.objects.exclude(neighborhood='').count()
         
         self.stdout.write(f"\n📊 DATABASE SUMMARY:")
         self.stdout.write(f"🏠 Total properties: {total:,}")
         self.stdout.write(f"👨‍💼 With agent names: {with_agents:,} ({with_agents/total*100:.1f}%)")
-        self.stdout.write(f"📧 With agent emails: {with_emails:,} ({with_emails/total*100:.1f}%)")
+        self.stdout.write(f"📞 With agent phones: {with_phones:,} ({with_phones/total*100:.1f}%)")
+        self.stdout.write(f"📐 With internal area: {with_internal_area:,} ({with_internal_area/total*100:.1f}%)")
+        self.stdout.write(f"🛏️ With bedrooms: {with_bedrooms:,} ({with_bedrooms/total*100:.1f}%)")
+        self.stdout.write(f"📍 With neighborhood: {with_neighborhood:,} ({with_neighborhood/total*100:.1f}%)")

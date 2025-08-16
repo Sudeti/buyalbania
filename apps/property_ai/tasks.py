@@ -345,9 +345,9 @@ def send_property_alerts_task():
         yesterday = timezone.now() - timezone.timedelta(days=1)
         new_properties = PropertyAnalysis.objects.filter(
             created_at__gte=yesterday,
-            status='completed',
             scraped_by__isnull=False,  # Only system-scraped properties
-            user__isnull=True  # Not user-requested analyses
+            user__isnull=True,  # Not user-requested analyses
+            asking_price__gt=0  # Must have a valid price
         ).order_by('-created_at')
         
         if not new_properties.exists():

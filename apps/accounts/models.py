@@ -94,11 +94,7 @@ class UserProfile(models.Model):
             if not location_match:
                 return False
         
-        # Check investment score
-        if property_analysis.investment_score and property_analysis.investment_score < self.min_investment_score:
-            return False
-            
-        # Check max price
+        # Check max price (investment score not available for new properties)
         if self.max_price and property_analysis.asking_price > self.max_price:
             return False
             

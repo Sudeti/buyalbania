@@ -1,0 +1,365 @@
+{% extends 'property_ai/base.html' %}
+{% load static %}
+{% load property_tags %}
+
+{% block title %}Property Rankings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ranking-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .ranking-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .rank-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        z-index: 1;
+    }
+    
+    .rank-1 { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #333; }
+    .rank-2 { background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%); color: #333; }
+    .rank-3 { background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%); color: white; }
+    
+    .metric-highlight {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .recommendation-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .recommendation-strong_buy { background: #d4edda; color: #155724; }
+    .recommendation-buy { background: #d1ecf1; color: #0c5460; }
+    .recommendation-hold { background: #fff3cd; color: #856404; }
+    .recommendation-avoid { background: #f8d7da; color: #721c24; }
+    
+    .filter-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 20px;
+    }
+    
+    .stats-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">🏆 Property Rankings</h1>
+                    <p class="text-muted mb-0">{{ ranking_title }} - {{ ranking_subtitle }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'property_ai:admin_agent_analytics' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-people"></i> Agent Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-card">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="ranking_type" class="form-label">Ranking Type</label>
+                        <select class="form-select" id="ranking_type" name="ranking_type">
+                            <option value="price_per_sqm" {% if ranking_type == 'price_per_sqm' %}selected{% endif %}>
+                                Best Price per m²
+                            </option>
+                            <option value="investment_score" {% if ranking_type == 'investment_score' %}selected{% endif %}>
+                                Highest Investment Score
+                            </option>
+                            <option value="market_position" {% if ranking_type == 'market_position' %}selected{% endif %}>
+                                Best Market Position
+                            </option>
+                            <option value="opportunity_score" {% if ranking_type == 'opportunity_score' %}selected{% endif %}>
+                                Highest Opportunity Score
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-select" id="location" name="location">
+                            <option value="">All Locations</option>
+                            {% for location in available_locations %}
+                            <option value="{{ location }}" {% if location_filter == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="property_type" class="form-label">Property Type</label>
+                        <select class="form-select" id="property_type" name="property_type">
+                            <option value="">All Types</option>
+                            {% for prop_type in available_property_types %}
+                            <option value="{{ prop_type }}" {% if property_type_filter == prop_type %}selected{% endif %}>
+                                {{ prop_type|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'property_ai:admin_property_rankings' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-summary">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-trophy-fill fs-1"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.total_ranked }}</h3>
+                        <p class="mb-0 opacity-75">Ranked Properties</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-summary">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-geo-alt-fill fs-1"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.location_count }}</h3>
+                        <p class="mb-0 opacity-75">Locations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-summary">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-house-fill fs-1"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.property_type_count }}</h3>
+                        <p class="mb-0 opacity-75">Property Types</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-summary">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-graph-up fs-1"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ ranking_type|title }}</h3>
+                        <p class="mb-0 opacity-75">Current Ranking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Rankings -->
+    <div class="row">
+        {% for property in properties %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card ranking-card h-100 position-relative">
+                <!-- Rank Badge -->
+                <div class="rank-badge {% if property.rank <= 3 %}rank-{{ property.rank }}{% endif %}">
+                    {{ property.rank }}
+                </div>
+                
+                <!-- Card Body -->
+                <div class="card-body p-3">
+                    <!-- Property Title -->
+                    <h6 class="card-title mb-2" title="{{ property.title }}">
+                        {{ property.title|truncatechars:50 }}
+                    </h6>
+                    
+                    <!-- Location & Type -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt"></i> {{ property.location }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-house"></i> {{ property.property_type|title }}
+                            </small>
+                        </div>
+                        {% if property.neighborhood %}
+                        <div class="mb-1">
+                            <small class="text-muted">
+                                <i class="bi bi-pin-map"></i> {{ property.neighborhood }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Key Metrics -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="metric-highlight">
+                                <i class="bi bi-currency-euro"></i> €{{ property.price|floatformat:0 }}
+                            </span>
+                            <span class="metric-highlight">
+                                <i class="bi bi-arrows-angle-expand"></i> {% if property.area %}{{ property.area }}m²{% else %}N/A{% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- Ranking-specific metric -->
+                        {% if ranking_type == 'price_per_sqm' and property.price_per_sqm %}
+                        <div class="text-center mb-2">
+                            <span class="metric-highlight">
+                                <i class="bi bi-graph-down"></i> €{{ property.price_per_sqm|floatformat:0 }}/m²
+                            </span>
+                        </div>
+                        {% elif ranking_type == 'investment_score' and property.investment_score %}
+                        <div class="text-center mb-2">
+                            <span class="metric-highlight">
+                                <i class="bi bi-star"></i> {{ property.investment_score }}/100
+                            </span>
+                        </div>
+                        {% elif ranking_type == 'market_position' and property.market_position %}
+                        <div class="text-center mb-2">
+                            <span class="metric-highlight {% if property.market_position < 0 %}text-success{% else %}text-warning{% endif %}">
+                                <i class="bi bi-percent"></i> {{ property.market_position|floatformat:1 }}% vs market
+                            </span>
+                        </div>
+                        {% elif ranking_type == 'opportunity_score' and property.opportunity_score %}
+                        <div class="text-center mb-2">
+                            <span class="metric-highlight">
+                                <i class="bi bi-lightning"></i> {{ property.opportunity_score|floatformat:1 }}/100
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Recommendation -->
+                    {% if property.recommendation %}
+                    <div class="mb-3 text-center">
+                        <span class="recommendation-badge recommendation-{{ property.recommendation }}">
+                            {{ property.recommendation|title|replace_underscore }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Agent Info -->
+                    {% if property.agent_name %}
+                    <div class="mb-3">
+                        <small class="text-muted">Agent:</small>
+                        <div class="fw-semibold">{{ property.agent_name }}</div>
+                        {% if property.agent_email %}
+                        <div class="contact-info">
+                            <i class="bi bi-envelope"></i>
+                            <a href="mailto:{{ property.agent_email }}" class="text-primary text-decoration-none">
+                                {{ property.agent_email|truncatechars:25 }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if property.agent_phone %}
+                        <div class="contact-info">
+                            <i class="bi bi-telephone"></i>
+                            <a href="tel:{{ property.agent_phone }}" class="text-primary text-decoration-none">
+                                {{ property.agent_phone }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Date -->
+                    <div class="text-muted">
+                        <small>
+                            <i class="bi bi-calendar"></i> {{ property.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Card Footer -->
+                <div class="card-footer bg-transparent border-top-0 pt-0">
+                    <a href="{% url 'property_ai:analysis_detail' analysis_id=property.id %}" 
+                       class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-eye"></i> View Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-trophy fs-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No properties found</h4>
+                <p class="text-muted">Try adjusting your filters or ranking criteria.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when ranking type changes
+document.getElementById('ranking_type').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Add loading state to filter buttons
+document.querySelectorAll('button[type="submit"]').forEach(button => {
+    button.addEventListener('click', function() {
+        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+        this.disabled = true;
+    });
+});
+</script>
+{% endblock %}
