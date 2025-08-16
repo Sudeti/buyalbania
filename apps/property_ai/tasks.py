@@ -256,10 +256,9 @@ def daily_property_scrape():
 
 @shared_task
 def midnight_bulk_scrape_task():
-    """Safe midnight bulk scraping with proper resumption"""
+    """Simple midnight bulk scraping with automatic page range tracking"""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
-    from apps.property_ai.management.commands.bulk_scrape_initial import Command
     
     try:
         User = get_user_model()
@@ -268,23 +267,6 @@ def midnight_bulk_scrape_task():
         if not system_user:
             logger.error("No superuser found for midnight scraping")
             return "Error: No superuser found"
-        
-        # FIXED: Use the proper resume calculation
-        command_instance = Command()
-        start_page = command_instance.calculate_resume_page()
-        
-        # Determine pages to scrape based on current database size
-        current_count = PropertyAnalysis.objects.count()
-        
-        # More conservative page limits for safety
-        if current_count < 200:  # Initial building phase
-            pages_to_scrape = 40  # Reduced from 35
-        elif current_count < 500:  # Growth phase
-            pages_to_scrape = 30  # Reduced from 30
-        elif current_count < 1000:  # Expansion phase
-            pages_to_scrape = 20  # Reduced from 25
-        else:  # Maintenance phase - just check for new properties
-            pages_to_scrape = 15  # Reduced from 20
         
         # Additional safety check - don't scrape if we've done too much recently
         recent_scrapes = PropertyAnalysis.objects.filter(
@@ -299,7 +281,8 @@ def midnight_bulk_scrape_task():
                 'recent_scrapes': recent_scrapes
             }
         
-        logger.info(f"🌙 Midnight scrape starting: {pages_to_scrape} pages from page {start_page}")
+        current_count = PropertyAnalysis.objects.count()
+        logger.info(f"🌙 Simple midnight scrape starting")
         logger.info(f"📊 Current database: {current_count} properties")
         logger.info(f"🕐 Recent scrapes (6h): {recent_scrapes}")
         
@@ -307,12 +290,11 @@ def midnight_bulk_scrape_task():
         start_time = timezone.now()
         initial_count = current_count
         
-        # Run the bulletproof scraper with proper resumption
+        # Run the simple nightly scraper (automatically handles page ranges)
         call_command(
-            'bulk_scrape_initial',
+            'simple_nightly_scrape',
             f'--user-id={system_user.id}',
-            f'--max-pages={pages_to_scrape}',
-            f'--start-page={start_page}',
+            '--pages-per-night=100',  # Fixed 100 pages per night
             '--delay=6.0',  # Safer overnight delay
             '--ultra-safe'  # Enable maximum safety for overnight
         )
@@ -324,23 +306,22 @@ def midnight_bulk_scrape_task():
         duration = (end_time - start_time).total_seconds() / 60  # minutes
         
         # Log comprehensive results
-        logger.info(f"🎉 Midnight scrape completed successfully!")
+        logger.info(f"🎉 Simple midnight scrape completed successfully!")
         logger.info(f"⏱️ Duration: {duration:.1f} minutes")
         logger.info(f"📈 New properties: {scraped_this_run}")
         logger.info(f"📊 Total database: {final_count} properties")
-        logger.info(f"🔄 Next run will start from page ~{start_page + pages_to_scrape}")
         
         return {
             'status': 'success',
             'new_properties': scraped_this_run,
             'total_properties': final_count,
             'duration_minutes': round(duration, 1),
-            'pages_scraped': pages_to_scrape,
-            'next_start_page': start_page + pages_to_scrape
+            'pages_scraped': 100,  # Fixed 100 pages per night
+            'method': 'simple_nightly_scrape'
         }
         
     except Exception as e:
-        logger.error(f"❌ Midnight scrape failed: {e}")
+        logger.error(f"❌ Simple midnight scrape failed: {e}")
         
         # Try to provide helpful error context
         try:
@@ -349,7 +330,7 @@ def midnight_bulk_scrape_task():
         except:
             pass
             
-        return f"Midnight scrape failed: {e}"
+        return f"Simple midnight scrape failed: {e}"
 
 @shared_task
 def send_property_alerts_task():
