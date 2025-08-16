@@ -96,13 +96,75 @@ def analyze_property(request):
     if existing_global_analysis:
         logger.debug(f"Global analysis status: {existing_global_analysis.status}, created: {existing_global_analysis.created_at}")
     
-    # If there's a completed analysis globally, redirect to it
+    # If there's a completed analysis globally, handle it properly
     if existing_global_analysis and existing_global_analysis.status == 'completed':
         logger.debug(f"User {request.user.username} accessing existing global analysis")
+        
         # Check if user has access to this analysis based on their tier
         if existing_global_analysis.is_available_to_user(request.user):
-            messages.success(request, 'Analysis found! You can access this property analysis without using your quota.')
-            return redirect('property_ai:analysis_detail', analysis_id=existing_global_analysis.id)
+            
+            # Check if analysis is older than 2 weeks
+            analysis_age = timezone.now() - existing_global_analysis.created_at
+            if analysis_age.days > 14:
+                # Analysis is old, check if user has quota to regenerate
+                if profile.can_analyze_property():
+                    messages.info(request, 'Analysis is older than 2 weeks. Regenerating with fresh data...')
+                    existing_global_analysis.user = request.user
+                    existing_global_analysis.status = 'analyzing'
+                    existing_global_analysis.save()
+                    analysis = existing_global_analysis
+                    # Continue with analysis flow below
+                else:
+                    messages.warning(request, 'Analysis is older than 2 weeks, but you\'ve used your quota. You can still view the existing analysis.')
+                    return redirect('property_ai:analysis_detail', analysis_id=existing_global_analysis.id)
+            else:
+                # Analysis is recent, send PDF report
+                from ..tasks import generate_property_report_task
+                try:
+                    # Create a copy for this user to get PDF
+                    user_analysis = PropertyAnalysis.objects.create(
+                        user=request.user,
+                        scraped_by=existing_global_analysis.scraped_by,
+                        property_url=existing_global_analysis.property_url,
+                        property_title=existing_global_analysis.property_title,
+                        property_location=existing_global_analysis.property_location,
+                        neighborhood=existing_global_analysis.neighborhood,
+                        asking_price=existing_global_analysis.asking_price,
+                        property_type=existing_global_analysis.property_type,
+                        total_area=existing_global_analysis.total_area,
+                        internal_area=existing_global_analysis.internal_area,
+                        bedrooms=existing_global_analysis.bedrooms,
+                        bathrooms=existing_global_analysis.bathrooms,
+                        floor_level=existing_global_analysis.floor_level,
+                        ceiling_height=existing_global_analysis.ceiling_height,
+                        facade_length=existing_global_analysis.facade_length,
+                        property_condition=existing_global_analysis.property_condition,
+                        furnished=existing_global_analysis.furnished,
+                        has_elevator=existing_global_analysis.has_elevator,
+                        description=existing_global_analysis.description,
+                        agent_name=existing_global_analysis.agent_name,
+                        agent_email=existing_global_analysis.agent_email,
+                        agent_phone=existing_global_analysis.agent_phone,
+                        status='completed',
+                        analysis_result=existing_global_analysis.analysis_result,
+                        ai_summary=existing_global_analysis.ai_summary,
+                        investment_score=existing_global_analysis.investment_score,
+                        recommendation=existing_global_analysis.recommendation,
+                        market_opportunity_score=existing_global_analysis.market_opportunity_score,
+                        price_percentile=existing_global_analysis.price_percentile,
+                        market_position_percentage=existing_global_analysis.market_position_percentage,
+                        negotiation_leverage=existing_global_analysis.negotiation_leverage,
+                        market_sentiment=existing_global_analysis.market_sentiment,
+                    )
+                    
+                    generate_property_report_task.delay(user_analysis.id)
+                    messages.success(request, 'Analysis found! A PDF report will be sent to your email shortly.')
+                    
+                except Exception as e:
+                    logger.error(f"Error creating user analysis copy for PDF: {e}")
+                    messages.success(request, 'Analysis found! You can access this property analysis without using your quota.')
+                
+                return redirect('property_ai:analysis_detail', analysis_id=existing_global_analysis.id)
         else:
             messages.error(request, 'This analysis exists but you need to upgrade your account to access it.')
             return redirect('property_ai:analyze_property')
