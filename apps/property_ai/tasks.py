@@ -240,7 +240,7 @@ def daily_property_scrape():
                     # Queue for analysis
                     analyze_property_task.delay(PropertyAnalysis.objects.latest('created_at').id)
                     
-                time.sleep(2)  # Respectful delay
+                time.sleep(4)  # More respectful delay for daily scraping
                 
             except Exception as e:
                 logger.error(f"Error scraping {url}: {e}")
@@ -275,17 +275,32 @@ def midnight_bulk_scrape_task():
         # Determine pages to scrape based on current database size
         current_count = PropertyAnalysis.objects.count()
         
+        # More conservative page limits for safety
         if current_count < 200:  # Initial building phase
-            pages_to_scrape = 35
+            pages_to_scrape = 40  # Reduced from 35
         elif current_count < 500:  # Growth phase
-            pages_to_scrape = 30
+            pages_to_scrape = 30  # Reduced from 30
         elif current_count < 1000:  # Expansion phase
-            pages_to_scrape = 25
+            pages_to_scrape = 20  # Reduced from 25
         else:  # Maintenance phase - just check for new properties
-            pages_to_scrape = 20
+            pages_to_scrape = 15  # Reduced from 20
+        
+        # Additional safety check - don't scrape if we've done too much recently
+        recent_scrapes = PropertyAnalysis.objects.filter(
+            created_at__gte=timezone.now() - timezone.timedelta(hours=6)
+        ).count()
+        
+        if recent_scrapes > 300:
+            logger.warning(f"⚠️ Too many recent scrapes ({recent_scrapes}), skipping midnight scrape")
+            return {
+                'status': 'skipped',
+                'reason': f'Too many recent scrapes: {recent_scrapes}',
+                'recent_scrapes': recent_scrapes
+            }
         
         logger.info(f"🌙 Midnight scrape starting: {pages_to_scrape} pages from page {start_page}")
         logger.info(f"📊 Current database: {current_count} properties")
+        logger.info(f"🕐 Recent scrapes (6h): {recent_scrapes}")
         
         # Track start time and count for reporting
         start_time = timezone.now()
@@ -297,7 +312,8 @@ def midnight_bulk_scrape_task():
             f'--user-id={system_user.id}',
             f'--max-pages={pages_to_scrape}',
             f'--start-page={start_page}',
-            '--delay=2.5'  # Faster at night when less traffic
+            '--delay=6.0',  # Safer overnight delay
+            '--ultra-safe'  # Enable maximum safety for overnight
         )
         
         # Calculate results

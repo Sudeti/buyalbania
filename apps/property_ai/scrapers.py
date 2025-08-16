@@ -13,11 +13,43 @@ logger = logging.getLogger(__name__)
 class Century21AlbaniaScraper:
     def __init__(self):
         self.base_url = "https://www.century21albania.com"
+        
+        # Enhanced realistic headers
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        ]
+        
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'User-Agent': random.choice(self.user_agents),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Cache-Control': 'max-age=0'
         }
+        
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+        
+        # Add request count for rotating user agents
+        self.request_count = 0
+    
+    def _rotate_user_agent(self):
+        """Rotate user agent every 50 requests to appear more human-like"""
+        self.request_count += 1
+        if self.request_count % 50 == 0:
+            new_user_agent = random.choice(self.user_agents)
+            self.session.headers.update({'User-Agent': new_user_agent})
+            logger.debug(f"Rotated User-Agent to: {new_user_agent[:50]}...")
     
     def get_sale_property_listings(self, max_pages=10):
         property_urls = []
@@ -58,6 +90,9 @@ class Century21AlbaniaScraper:
     def scrape_property(self, url):
         """Scrape basic property data - IMPROVED ALBANIAN DETECTION"""
         try:
+            # Rotate user agent periodically
+            self._rotate_user_agent()
+            
             response = self.session.get(url, timeout=30)
             response.raise_for_status()
             
