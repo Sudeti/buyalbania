@@ -10,6 +10,7 @@ from .models import PropertyAnalysis
 from .ai_engine import PropertyAI
 from .report_generator import PropertyReportPDF
 from .analytics import PropertyAnalytics
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Avg
 import random
@@ -204,7 +205,7 @@ def daily_property_scrape():
         # Only check first 5 pages for new properties
         urls = scraper.get_sale_property_listings(max_pages=5)
         
-        # Filter to only NEW URLs
+        # Filter to only NEW URLs (URLs are already standardized from scraper)
         existing_urls = set(PropertyAnalysis.objects.values_list('property_url', flat=True))
         new_urls = [url for url in urls if url not in existing_urls]
         

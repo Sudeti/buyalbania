@@ -19,6 +19,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from apps.property_ai.models import PropertyAnalysis
 from apps.property_ai.scrapers import Century21AlbaniaScraper
+
 from django.db import transaction
 import time
 import random
@@ -106,7 +107,7 @@ class Command(BaseCommand):
             self.stdout.write(f"❌ URL collection failed: {e}")
             return
         
-        # Filter existing URLs
+        # Filter existing URLs (URLs are already standardized from scraper)
         existing_urls = set(PropertyAnalysis.objects.values_list('property_url', flat=True))
         new_urls = [url for url in all_urls if url not in existing_urls]
         

@@ -8,6 +8,7 @@ from decimal import Decimal
 from urllib.parse import urljoin
 import random
 
+
 logger = logging.getLogger(__name__)
 
 class Century21AlbaniaScraper:

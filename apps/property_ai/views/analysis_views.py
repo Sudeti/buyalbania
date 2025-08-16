@@ -9,6 +9,7 @@ from datetime import timedelta
 from ..models import PropertyAnalysis
 from ..ai_engine import PropertyAI
 from ..scrapers import Century21AlbaniaScraper
+from ..utils import standardize_property_url
 import logging
 from decimal import Decimal
 
@@ -50,7 +51,14 @@ def analyze_property(request):
         messages.error(request, 'Please provide a property URL')
         return redirect('property_ai:analyze_property')
     
-    # Check if user has already analyzed this property
+    # Standardize the URL to avoid duplicates (remove /en prefix, etc.)
+    original_url = property_url
+    property_url = standardize_property_url(property_url)
+    
+    if original_url != property_url:
+        logger.info(f"URL standardized: {original_url} -> {property_url}")
+    
+    # Check if user has already analyzed this property (using standardized URL)
     existing_user_analysis = PropertyAnalysis.objects.filter(
         property_url=property_url, 
         user=request.user
@@ -80,7 +88,7 @@ def analyze_property(request):
             messages.warning(request, 'Analysis already in progress. Please wait.')
             return redirect('property_ai:analysis_detail', analysis_id=existing_user_analysis.id)
     
-    # Check if property exists globally
+    # Check if property exists globally (using standardized URL)
     existing_global_analysis = PropertyAnalysis.objects.filter(property_url=property_url).first()
     
     logger.debug(f"User {request.user.username} (tier: {profile.subscription_tier}) analyzing {property_url}")
