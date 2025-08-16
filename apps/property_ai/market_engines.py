@@ -6,14 +6,15 @@ from django.db.models import Avg, Count, Min, Max, Q, F, Variance
 from django.utils import timezone
 from datetime import timedelta
 from .models import PropertyAnalysis
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
 class MarketPositionEngine:
-    """Real-time market position analysis based on actual comparable data"""
+    """Real-time market position analysis based on actual comparable data with caching"""
     
     def calculate_property_advantage(self, property_analysis: PropertyAnalysis) -> Optional[Dict]:
-        """Calculate real market position using actual comparable properties"""
+        """Calculate real market position using actual comparable properties with caching"""
         try:
             location = property_analysis.property_location.split(',')[0]
             prop_type = property_analysis.property_type
@@ -22,6 +23,13 @@ class MarketPositionEngine:
             if not price_per_sqm or not property_analysis.total_area:
                 logger.warning(f"Missing price or area data for analysis {property_analysis.id}")
                 return None
+            
+            # Create cache key
+            cache_key = f"market_position_{location}_{prop_type}_{price_per_sqm}_{property_analysis.total_area}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for market position: {location}")
+                return cached_result
             
             # Get real comparables from database
             comparables = PropertyAnalysis.objects.filter(
@@ -71,7 +79,7 @@ class MarketPositionEngine:
                 position_category = "top_quartile"
                 advantage_description = f"Priced in top 25% of market"
             
-            return {
+            result = {
                 'market_percentile': percentile,
                 'position_category': position_category,
                 'advantage_description': advantage_description,
@@ -85,6 +93,12 @@ class MarketPositionEngine:
                     'current': price_per_sqm
                 }
             }
+            
+            # Cache the result for 1 hour
+            cache.set(cache_key, result, 3600)
+            logger.debug(f"Cache set for market position: {location}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error calculating property advantage: {e}")
@@ -110,14 +124,21 @@ class MarketPositionEngine:
 
 
 class AgentPerformanceAnalyzer:
-    """Analyze agent performance patterns from scraped data"""
+    """Analyze agent performance patterns from scraped data with caching"""
     
     def get_agent_insights(self, property_analysis: PropertyAnalysis) -> Optional[Dict]:
-        """Get agent performance insights based on historical data"""
+        """Get agent performance insights based on historical data with caching"""
         try:
             agent_name = property_analysis.agent_name
             if not agent_name:
                 return None
+            
+            # Create cache key
+            cache_key = f"agent_insights_{agent_name}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for agent insights: {agent_name}")
+                return cached_result
             
             # Analyze agent's portfolio from scraped data
             agent_properties = PropertyAnalysis.objects.filter(
@@ -172,7 +193,7 @@ class AgentPerformanceAnalyzer:
                 consistency_score
             )
             
-            return {
+            result = {
                 'agent_portfolio_size': agent_stats['total_properties'],
                 'agent_avg_price_vs_market': agent_vs_market_percent,
                 'agent_consistency_score': consistency_score,
@@ -185,6 +206,12 @@ class AgentPerformanceAnalyzer:
                     'difference_percent': agent_vs_market_percent
                 }
             }
+            
+            # Cache the result for 2 hours (agent data changes less frequently)
+            cache.set(cache_key, result, 7200)
+            logger.debug(f"Cache set for agent insights: {agent_name}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error analyzing agent performance: {e}")
@@ -234,13 +261,20 @@ class AgentPerformanceAnalyzer:
 
 
 class NeighborhoodVelocityTracker:
-    """Track market momentum using time-series data"""
+    """Track market momentum using time-series data with caching"""
     
     def analyze_market_momentum(self, property_analysis: PropertyAnalysis) -> Dict:
-        """Analyze market momentum and timing intelligence"""
+        """Analyze market momentum and timing intelligence with caching"""
         try:
             location = property_analysis.property_location.split(',')[0]
             now = timezone.now()
+            
+            # Create cache key
+            cache_key = f"market_momentum_{location}_{now.strftime('%Y-%m-%d')}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for market momentum: {location}")
+                return cached_result
             
             # Get properties by time periods
             last_30_days = PropertyAnalysis.objects.filter(
@@ -294,7 +328,7 @@ class NeighborhoodVelocityTracker:
                 velocity_30d, velocity_90d, momentum, active_listings
             )
             
-            return {
+            result = {
                 'listing_velocity_trend': velocity_30d - velocity_90d,
                 'velocity_30d': velocity_30d,
                 'velocity_90d': velocity_90d,
@@ -304,6 +338,12 @@ class NeighborhoodVelocityTracker:
                 'timing_recommendation': self._get_timing_recommendation(market_temperature, momentum),
                 'market_phase': self._determine_market_phase(momentum, velocity_30d, active_listings)
             }
+            
+            # Cache the result for 6 hours (market momentum changes daily)
+            cache.set(cache_key, result, 21600)
+            logger.debug(f"Cache set for market momentum: {location}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error analyzing market momentum: {e}")
@@ -370,11 +410,18 @@ class NeighborhoodVelocityTracker:
 
 
 class PropertyScarcityAnalyzer:
-    """Analyze property scarcity and uniqueness"""
+    """Analyze property scarcity and uniqueness with caching"""
     
     def calculate_scarcity_score(self, property_analysis: PropertyAnalysis) -> Dict:
-        """Calculate property scarcity score based on market supply"""
+        """Calculate property scarcity score based on market supply with caching"""
         try:
+            # Create cache key
+            cache_key = f"scarcity_score_{property_analysis.id}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for scarcity score: {property_analysis.id}")
+                return cached_result
+            
             # Define search criteria for "similar" properties
             location = property_analysis.property_location.split(',')[0]
             filters = {
@@ -418,7 +465,7 @@ class PropertyScarcityAnalyzer:
             # Market gap analysis
             market_gap = 'high_demand_low_supply' if similar_active < 3 and similar_sold > 5 else 'normal'
             
-            return {
+            result = {
                 'scarcity_score': final_score,
                 'similar_active_count': similar_active,
                 'historical_demand': similar_sold,
@@ -428,6 +475,12 @@ class PropertyScarcityAnalyzer:
                 'scarcity_category': self._categorize_scarcity(final_score),
                 'demand_supply_ratio': similar_sold / max(similar_active, 1)
             }
+            
+            # Cache the result for 1 hour
+            cache.set(cache_key, result, 3600)
+            logger.debug(f"Cache set for scarcity score: {property_analysis.id}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error calculating scarcity score: {e}")
@@ -482,12 +535,19 @@ class PropertyScarcityAnalyzer:
 
 
 class ROICalculator:
-    """Calculate investment ROI based on real market data"""
+    """Calculate investment ROI based on real market data with caching"""
     
     def calculate_investment_potential(self, property_analysis: PropertyAnalysis) -> Dict:
-        """Calculate investment potential with real market data"""
+        """Calculate investment potential with real market data and caching"""
         try:
             location = property_analysis.property_location.split(',')[0]
+            
+            # Create cache key
+            cache_key = f"roi_calculation_{property_analysis.id}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for ROI calculation: {property_analysis.id}")
+                return cached_result
             
             # Estimate monthly rent from market data
             estimated_monthly_rent = self._estimate_rent_from_market_data(property_analysis)
@@ -520,7 +580,7 @@ class ROICalculator:
             # Compare to market average
             market_comparison = self._compare_to_market_averages(gross_yield, location)
             
-            return {
+            result = {
                 'gross_annual_yield': gross_yield,
                 'net_annual_yield': net_yield,
                 'estimated_monthly_rent': estimated_monthly_rent,
@@ -533,6 +593,12 @@ class ROICalculator:
                 'investment_category': self._categorize_investment(gross_yield, total_return_5y),
                 'risk_adjusted_return': self._calculate_risk_adjusted_return(gross_yield, location_appreciation)
             }
+            
+            # Cache the result for 1 hour
+            cache.set(cache_key, result, 3600)
+            logger.debug(f"Cache set for ROI calculation: {property_analysis.id}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error calculating investment potential: {e}")
@@ -579,8 +645,14 @@ class ROICalculator:
             return float(property_analysis.asking_price) * 0.006  # Default 0.6%
     
     def _calculate_location_appreciation_rate(self, location: str) -> float:
-        """Calculate location appreciation rate based on historical data"""
+        """Calculate location appreciation rate based on historical data with caching"""
         try:
+            # Create cache key
+            cache_key = f"appreciation_rate_{location}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                return cached_result
+            
             # Get price trends for location
             six_months_ago = timezone.now() - timedelta(days=180)
             
@@ -606,20 +678,24 @@ class ROICalculator:
             
             if recent_prices and older_prices and older_prices > 0:
                 appreciation = ((recent_prices - older_prices) / older_prices) * 100
-                return round(appreciation, 1)
+                result = round(appreciation, 1)
+            else:
+                # Default appreciation rates by location
+                default_rates = {
+                    'tirana': 8.0,
+                    'vlorë': 6.0,
+                    'vlore': 6.0,
+                    'durrës': 5.0,
+                    'durres': 5.0,
+                    'saranda': 7.0
+                }
+                
+                location_key = location.lower()
+                result = default_rates.get(location_key, 5.0)
             
-            # Default appreciation rates by location
-            default_rates = {
-                'tirana': 8.0,
-                'vlorë': 6.0,
-                'vlore': 6.0,
-                'durrës': 5.0,
-                'durres': 5.0,
-                'saranda': 7.0
-            }
-            
-            location_key = location.lower()
-            return default_rates.get(location_key, 5.0)
+            # Cache the result for 24 hours (appreciation rates change slowly)
+            cache.set(cache_key, result, 86400)
+            return result
             
         except Exception as e:
             logger.error(f"Error calculating appreciation rate: {e}")

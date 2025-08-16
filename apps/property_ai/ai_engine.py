@@ -6,11 +6,53 @@ import threading
 from decimal import Decimal
 from django.conf import settings
 import google.generativeai as genai
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
+def rate_limit(calls_per_minute=60):
+    """Rate limiting decorator for API calls"""
+    def decorator(func):
+        last_call = 0
+        call_count = 0
+        reset_time = time.time() + 60
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal last_call, call_count, reset_time
+            now = time.time()
+            
+            # Reset counter if minute has passed
+            if now > reset_time:
+                call_count = 0
+                reset_time = now + 60
+            
+            # Check if we're at the limit
+            if call_count >= calls_per_minute:
+                sleep_time = reset_time - now
+                if sleep_time > 0:
+                    logger.warning(f"Rate limit reached, sleeping for {sleep_time:.2f} seconds")
+                    time.sleep(sleep_time)
+                call_count = 0
+                reset_time = time.time() + 60
+            
+            # Ensure minimum delay between calls
+            if last_call > 0:
+                min_delay = 60.0 / calls_per_minute
+                time_since_last = now - last_call
+                if time_since_last < min_delay:
+                    sleep_time = min_delay - time_since_last
+                    time.sleep(sleep_time)
+            
+            call_count += 1
+            last_call = time.time()
+            
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 class PropertyAI:
-    """AI-powered property investment analysis"""
+    """AI-powered property investment analysis with rate limiting and enhanced error handling"""
 
     def __init__(self, model_name='gemini-2.5-pro'):
         try:
@@ -58,8 +100,9 @@ class PropertyAI:
             logger.error(f"Property analysis failed: {str(e)}")
             return {"status": "error", "message": str(e)}
     
+    @rate_limit(calls_per_minute=30)  # Conservative rate limiting
     def _generate_ai_summary_from_data(self, data_result: dict, property_analysis) -> str:
-        """Generate AI summary based on real market data"""
+        """Generate AI summary based on real market data with rate limiting"""
         try:
             # Extract key data points
             investment_score = data_result.get('investment_score', 50)
@@ -171,7 +214,7 @@ class PropertyAI:
             return {"status": "error", "message": str(e)}
 
     def _generate_with_thread_timeout(self, prompt, timeout=120):
-        """Generate with timeout protection"""
+        """Generate with timeout protection and enhanced error handling"""
         result = [None]
         exception = [None]
         
@@ -191,7 +234,20 @@ class PropertyAI:
             return None
             
         if exception[0]:
-            raise exception[0]
+            # Enhanced error handling for different types of API errors
+            error = exception[0]
+            if "quota" in str(error).lower():
+                logger.error("API quota exceeded")
+                raise Exception("AI service quota exceeded. Please try again later.")
+            elif "rate" in str(error).lower():
+                logger.error("API rate limit exceeded")
+                raise Exception("AI service rate limit exceeded. Please try again later.")
+            elif "timeout" in str(error).lower():
+                logger.error("API timeout")
+                raise Exception("AI service timeout. Please try again.")
+            else:
+                logger.error(f"API error: {error}")
+                raise error
             
         return result[0]
 
@@ -215,18 +271,24 @@ class PropertyAI:
             return obj
     
     def _safe_json_loads(self, text):
-        """Safe JSON parsing with fallbacks"""
+        """Safe JSON parsing with fallbacks and enhanced error handling"""
         try:
             return json.loads(text)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.warning(f"JSON decode error: {e}")
             # Clean up common issues
             text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
             text = text.replace(',}', '}').replace(',]', ']')
             try:
                 return json.loads(text)
-            except:
+            except json.JSONDecodeError:
                 # Extract JSON with regex
                 json_match = re.search(r'({[\s\S]*})', text)
                 if json_match:
-                    return json.loads(json_match.group(1))
+                    try:
+                        return json.loads(json_match.group(1))
+                    except json.JSONDecodeError:
+                        logger.error("Failed to parse JSON even after regex extraction")
+                        raise
+                logger.error("No JSON found in response")
                 raise

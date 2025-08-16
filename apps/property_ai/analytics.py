@@ -6,20 +6,30 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 from .models import PropertyAnalysis
+from django.core.cache import cache
+from django.db.models import Prefetch
 
 logger = logging.getLogger(__name__)
 
 class PropertyAnalytics:
-    """Comprehensive property market analytics service"""
+    """Comprehensive property market analytics service with caching and optimization"""
     
     def __init__(self):
         self.now = timezone.now()
         self.six_months_ago = self.now - timedelta(days=180)
         self.one_year_ago = self.now - timedelta(days=365)
+        self.cache_timeout = 3600  # 1 hour cache
     
     def get_location_market_stats(self, location: str, property_type: str = None, include_unanalyzed: bool = True) -> Dict:
-        """Get comprehensive market statistics for a location"""
+        """Get comprehensive market statistics for a location with caching"""
         try:
+            # Create cache key based on parameters
+            cache_key = f"market_stats_{location}_{property_type}_{include_unanalyzed}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for market stats: {location}")
+                return cached_result
+            
             # Base query for location - include all properties, not just completed analyses
             base_query = PropertyAnalysis.objects.filter(
                 property_location__icontains=location,
@@ -34,7 +44,7 @@ class PropertyAnalytics:
             if not include_unanalyzed:
                 base_query = base_query.filter(status='completed')
             
-            # Calculate key metrics
+            # Calculate key metrics in a single query
             stats = base_query.aggregate(
                 total_properties=Count('id'),
                 avg_price=Avg('asking_price'),
@@ -49,7 +59,7 @@ class PropertyAnalytics:
                 failed_count=Count('id', filter=Q(status='failed')),
             )
             
-            # Calculate price ranges
+            # Calculate derived metrics
             if stats['total_properties'] > 0:
                 price_range = stats['max_price'] - stats['min_price']
                 stats['price_range'] = price_range
@@ -84,6 +94,10 @@ class PropertyAnalytics:
                 stats['market_sentiment'] = 'unknown'
                 stats['analysis_completion_rate'] = 0
             
+            # Cache the result
+            cache.set(cache_key, stats, self.cache_timeout)
+            logger.debug(f"Cache set for market stats: {location}")
+            
             return stats
             
         except Exception as e:
@@ -91,8 +105,15 @@ class PropertyAnalytics:
             return {}
     
     def get_price_trends(self, location: str, property_type: str = None, months: int = 6, include_unanalyzed: bool = True) -> List[Dict]:
-        """Get price trends over time for a location"""
+        """Get price trends over time for a location with caching"""
         try:
+            # Create cache key
+            cache_key = f"price_trends_{location}_{property_type}_{months}_{include_unanalyzed}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for price trends: {location}")
+                return cached_result
+            
             start_date = self.now - timedelta(days=months * 30)
             
             base_query = PropertyAnalysis.objects.filter(
@@ -108,7 +129,7 @@ class PropertyAnalytics:
             if not include_unanalyzed:
                 base_query = base_query.filter(status='completed')
             
-            # Group by month and calculate averages
+            # Group by month and calculate averages in a single query
             trends = base_query.annotate(
                 month=TruncMonth('created_at')
             ).values('month').annotate(
@@ -120,7 +141,13 @@ class PropertyAnalytics:
                 analyzing_count=Count('id', filter=Q(status='analyzing'))
             ).order_by('month')
             
-            return list(trends)
+            trends_list = list(trends)
+            
+            # Cache the result
+            cache.set(cache_key, trends_list, self.cache_timeout)
+            logger.debug(f"Cache set for price trends: {location}")
+            
+            return trends_list
             
         except Exception as e:
             logger.error(f"Error calculating price trends for {location}: {e}")
@@ -138,7 +165,7 @@ class PropertyAnalytics:
             # Location-based metrics
             location_tier = property_analysis.location_tier
             
-            # Get market context for this location and property type
+            # Get market context for this location and property type with caching
             location = property_analysis.property_location.split(',')[0]
             market_stats = self.get_location_market_stats(location, property_analysis.property_type, include_unanalyzed=True)
             
@@ -191,14 +218,21 @@ class PropertyAnalytics:
             return {}
     
     def get_comparable_analysis(self, property_analysis: PropertyAnalysis, include_unanalyzed: bool = True) -> Dict:
-        """Get detailed comparable property analysis"""
+        """Get detailed comparable property analysis with optimization"""
         try:
             location = property_analysis.property_location.split(',')[0]
             property_type = property_analysis.property_type
             price = float(property_analysis.asking_price)
             area = property_analysis.total_area
             
-            # Get comparable properties
+            # Create cache key
+            cache_key = f"comparable_{location}_{property_type}_{price}_{area}_{include_unanalyzed}"
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug(f"Cache hit for comparable analysis: {location}")
+                return cached_result
+            
+            # Get comparable properties with optimized query
             comparables = PropertyAnalysis.objects.filter(
                 property_location__icontains=location,
                 property_type=property_type,
@@ -217,7 +251,7 @@ class PropertyAnalytics:
                     Q(internal_area__range=(area - size_range, area + size_range))
                 )
             
-            # Get recent comparables (last 6 months)
+            # Get recent comparables (last 6 months) with optimized query
             comparables = comparables.filter(
                 created_at__gte=self.six_months_ago
             ).order_by('-created_at')[:10]
@@ -225,7 +259,7 @@ class PropertyAnalytics:
             if not comparables.exists():
                 return {}
             
-            # Calculate comparable statistics
+            # Calculate comparable statistics in a single query
             comp_stats = comparables.aggregate(
                 avg_price=Avg('asking_price'),
                 avg_price_per_sqm=Avg(F('asking_price') / F('total_area')),
@@ -257,7 +291,7 @@ class PropertyAnalytics:
             else:
                 price_per_sqm_position = 0
             
-            return {
+            result = {
                 'comparable_count': comp_stats['total_count'],
                 'completed_comparables': comp_stats['completed_count'],
                 'avg_comparable_price': avg_comp_price,
@@ -276,6 +310,12 @@ class PropertyAnalytics:
                     'investment_score', 'recommendation', 'status', 'created_at'
                 )[:5])
             }
+            
+            # Cache the result
+            cache.set(cache_key, result, self.cache_timeout)
+            logger.debug(f"Cache set for comparable analysis: {location}")
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error calculating comparable analysis: {e}")

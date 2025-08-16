@@ -18,9 +18,9 @@ import time
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True, max_retries=3)
+@shared_task(bind=True, max_retries=5, autoretry_for=(Exception,), retry_backoff=True, retry_jitter=True)
 def generate_property_report_task(self, property_analysis_id):
-    """Generate comprehensive property report PDF"""
+    """Generate comprehensive property report PDF with exponential backoff retry"""
     try:
         property_analysis = PropertyAnalysis.objects.get(id=property_analysis_id)
         
@@ -60,14 +60,12 @@ def generate_property_report_task(self, property_analysis_id):
         raise
     except Exception as e:
         logger.error(f"Error generating report for analysis {property_analysis_id}: {str(e)}")
-        if self.request.retries < self.max_retries:
-            raise self.retry(countdown=60 * (2 ** self.request.retries))
-        else:
-            raise
+        # Let Celery handle retry with exponential backoff
+        raise
 
-@shared_task
-def send_report_email(property_analysis_id):
-    """Send the PDF report via email to the user"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def send_report_email(self, property_analysis_id):
+    """Send the PDF report via email to the user with retry logic"""
     try:
         analysis = PropertyAnalysis.objects.get(id=property_analysis_id)
         if analysis.report_generated and analysis.report_file_path and analysis.user:
@@ -104,13 +102,15 @@ def send_report_email(property_analysis_id):
             logger.warning(f"Report email not sent for analysis {property_analysis_id}: report not ready or no user.")
     except PropertyAnalysis.DoesNotExist:
         logger.error(f"Property analysis {property_analysis_id} not found for email sending")
+        raise
     except Exception as e:
         logger.error(f"Error sending report email for analysis {property_analysis_id}: {str(e)}")
+        raise
 
     
-@shared_task
-def check_property_urls_task():
-    """Celery task to check property URL status"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def check_property_urls_task(self):
+    """Celery task to check property URL status with retry logic"""
     from django.core.management import call_command
     
     try:
@@ -120,12 +120,11 @@ def check_property_urls_task():
         return "Property URL check completed"
     except Exception as e:
         logger.error(f"Property URL check failed: {e}")
-        return f"Error: {e}"
+        raise
 
-
-@shared_task(bind=True, max_retries=3)
+@shared_task(bind=True, max_retries=5, autoretry_for=(Exception,), retry_backoff=True, retry_jitter=True)
 def analyze_property_task(self, property_analysis_id):
-    """Run AI analysis on a scraped property"""
+    """Run AI analysis on a scraped property with exponential backoff retry"""
     try:
         property_analysis = PropertyAnalysis.objects.get(id=property_analysis_id)
         
@@ -185,15 +184,11 @@ def analyze_property_task(self, property_analysis_id):
         raise
     except Exception as e:
         logger.error(f"Error analyzing property {property_analysis_id}: {str(e)}")
-        if self.request.retries < self.max_retries:
-            raise self.retry(countdown=60 * (2 ** self.request.retries))
-        else:
-            raise
+        raise
 
-
-@shared_task
-def daily_property_scrape():
-    """Lightweight daily scraping for NEW properties only"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def daily_property_scrape(self):
+    """Lightweight daily scraping for NEW properties only with retry logic"""
     from django.contrib.auth import get_user_model
     from apps.property_ai.scrapers import Century21AlbaniaScraper
     
@@ -202,7 +197,7 @@ def daily_property_scrape():
     
     if not system_user:
         logger.error("No superuser found for daily scraping")
-        return "Error: No superuser found"
+        raise Exception("No superuser found")
     
     try:
         scraper = Century21AlbaniaScraper()
@@ -257,11 +252,11 @@ def daily_property_scrape():
         
     except Exception as e:
         logger.error(f"Daily property scrape failed: {e}")
-        return f"Daily scrape failed: {e}"
+        raise
 
-@shared_task
-def midnight_bulk_scrape_task():
-    """Simple midnight bulk scraping with automatic page range tracking"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def midnight_bulk_scrape_task(self):
+    """Simple midnight bulk scraping with automatic page range tracking and retry logic"""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
     
@@ -271,7 +266,7 @@ def midnight_bulk_scrape_task():
         
         if not system_user:
             logger.error("No superuser found for midnight scraping")
-            return "Error: No superuser found"
+            raise Exception("No superuser found")
         
         # Additional safety check - don't scrape if we've done too much recently
         recent_scrapes = PropertyAnalysis.objects.filter(
@@ -335,11 +330,11 @@ def midnight_bulk_scrape_task():
         except:
             pass
             
-        return f"Simple midnight scrape failed: {e}"
+        raise
 
-@shared_task
-def send_property_alerts_task():
-    """Send email alerts to users about new properties that are good deals"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def send_property_alerts_task(self):
+    """Send email alerts to users about new properties that are good deals with retry logic"""
     try:
         User = get_user_model()
         analytics = PropertyAnalytics()
@@ -376,7 +371,7 @@ def send_property_alerts_task():
                 properties_by_location[location] = []
             properties_by_location[location].append(prop)
         
-        # Get market stats for each location
+        # Get market stats for each location with caching
         location_market_stats = {}
         for location in properties_by_location.keys():
             market_stats = analytics.get_location_market_stats(location)
@@ -430,11 +425,11 @@ def send_property_alerts_task():
         
     except Exception as e:
         logger.error(f"Error in property alerts task: {e}")
-        return f"Property alerts task failed: {e}"
+        raise
 
-@shared_task
-def send_property_alert_email(user_id, property_ids):
-    """Send property alert email to a specific user"""
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
+def send_property_alert_email(self, user_id, property_ids):
+    """Send property alert email to a specific user with retry logic"""
     try:
         User = get_user_model()
         user = User.objects.get(id=user_id)
@@ -472,7 +467,7 @@ def send_property_alert_email(user_id, property_ids):
         
     except User.DoesNotExist:
         logger.error(f"User {user_id} not found for property alert")
-        return f"User {user_id} not found"
+        raise
     except Exception as e:
         logger.error(f"Error sending property alert email to user {user_id}: {e}")
-        return f"Error sending alert: {e}"
+        raise

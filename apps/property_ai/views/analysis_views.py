@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Prefetch
 from django.utils import timezone
 from datetime import timedelta
 from ..models import PropertyAnalysis
@@ -455,17 +455,17 @@ def analyze_property(request):
 
 @login_required
 def my_analyses(request):
-    """Show only user's own analyses for all tiers"""
+    """Show only user's own analyses for all tiers with optimized queries"""
     if not hasattr(request.user, 'profile'):
         messages.error(request, 'Please complete your profile.')
         return redirect('accounts:user_profile')
     
     profile = request.user.profile
     
-    # ALL TIERS: Show only user's own analyses
-    analyses = PropertyAnalysis.objects.filter(user=request.user).order_by('-created_at')
+    # ALL TIERS: Show only user's own analyses with optimized query
+    analyses = PropertyAnalysis.objects.filter(user=request.user).select_related('user').order_by('-created_at')
     
-    # Calculate enhanced stats
+    # Calculate enhanced stats with optimized queries
     completed_analyses = analyses.filter(status='completed')
     stats = {
         'total': analyses.count(),
@@ -477,7 +477,7 @@ def my_analyses(request):
         'below_market_count': completed_analyses.filter(market_position_percentage__lt=0).count(),
     }
     
-    # Get portfolio analytics
+    # Get portfolio analytics with caching
     from ..analytics import PropertyAnalytics
     analytics = PropertyAnalytics()
     
@@ -486,7 +486,7 @@ def my_analyses(request):
         # Get unique locations from user's analyses
         locations = completed_analyses.values_list('property_location', flat=True).distinct()
         if locations:
-            # Get market summary for user's portfolio
+            # Get market summary for user's portfolio with caching
             portfolio_analytics = analytics.get_market_summary()
     
     # Get subscription plans for upgrade buttons
@@ -505,7 +505,7 @@ def my_analyses(request):
 
 
 def get_comparable_properties(analysis):
-    """Get comparable properties for analysis context"""
+    """Get comparable properties for analysis context with optimized queries"""
     try:
         logger.debug(f"Getting comparable properties for analysis {analysis.id}")
         
@@ -517,12 +517,12 @@ def get_comparable_properties(analysis):
             logger.warning(f"No location found for analysis {analysis.id}")
             return []
         
-        # Find similar properties in same location and type
+        # Find similar properties in same location and type with optimized query
         comparables = PropertyAnalysis.objects.filter(
             property_location__icontains=location.split(',')[0],  # Main city
             status='completed',
             asking_price__gt=0
-        ).exclude(id=analysis.id)
+        ).exclude(id=analysis.id).select_related('user')
         
         # Add property type filter if available
         if property_type:
@@ -568,7 +568,7 @@ def get_comparable_properties(analysis):
 
 @login_required
 def analysis_detail(request, analysis_id):
-    """Display investment analysis results with access control"""
+    """Display investment analysis results with access control and optimized queries"""
     analysis = get_object_or_404(PropertyAnalysis, id=analysis_id)
     
     # CHECK ACCESS CONTROL
@@ -581,12 +581,12 @@ def analysis_detail(request, analysis_id):
         messages.error(request, 'Please log in to view property analyses.')
         return redirect('accounts:login')
     
-    # Get similar properties for comparison (also filtered by tier)
+    # Get similar properties for comparison (also filtered by tier) with optimized query
     similar_properties = PropertyAnalysis.objects.filter(
         property_location__icontains=analysis.property_location.split(',')[0],
         property_type=analysis.property_type,
         status='completed'
-    ).exclude(id=analysis.id)
+    ).exclude(id=analysis.id).select_related('user')
     
     # Filter similar properties by user tier too
     if request.user.is_authenticated and hasattr(request.user, 'profile'):
@@ -595,7 +595,7 @@ def analysis_detail(request, analysis_id):
     else:
         similar_properties = []
     
-    # Get enhanced analytics data
+    # Get enhanced analytics data with caching
     from ..analytics import PropertyAnalytics
     analytics = PropertyAnalytics()
     
