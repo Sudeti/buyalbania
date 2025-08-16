@@ -352,8 +352,21 @@ def analyze_property(request):
                 
                 # Validate negotiation_leverage field
                 valid_leverage = ['high', 'medium', 'low']
-                if analysis.negotiation_leverage not in valid_leverage:
-                    logger.warning(f"Invalid negotiation_leverage value: {analysis.negotiation_leverage}")
+                leverage_value = analysis.negotiation_leverage
+                
+                # Handle various edge cases
+                if leverage_value:
+                    leverage_lower = leverage_value.lower().strip()
+                    if 'high' in leverage_lower or 'strong' in leverage_lower:
+                        analysis.negotiation_leverage = 'high'
+                    elif 'medium' in leverage_lower or 'moderate' in leverage_lower:
+                        analysis.negotiation_leverage = 'medium'
+                    elif 'low' in leverage_lower or 'weak' in leverage_lower:
+                        analysis.negotiation_leverage = 'low'
+                    elif leverage_lower not in valid_leverage:
+                        logger.warning(f"Invalid negotiation_leverage value: {leverage_value}")
+                        analysis.negotiation_leverage = 'medium'  # Default to medium
+                else:
                     analysis.negotiation_leverage = 'medium'  # Default to medium
                 
                 # Fix market_sentiment - it should be a string, not a list

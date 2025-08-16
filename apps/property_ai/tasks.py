@@ -384,10 +384,11 @@ def send_property_alerts_task():
             if location not in location_market_stats:
                 continue
                 
-            avg_price = location_market_stats[location]['avg_price']
+            avg_price = float(location_market_stats[location]['avg_price'])  # Convert Decimal to float
             for prop in properties:
                 if prop.asking_price and avg_price:
-                    price_discount = ((avg_price - prop.asking_price) / avg_price) * 100
+                    prop_price = float(prop.asking_price)  # Convert Decimal to float
+                    price_discount = ((avg_price - prop_price) / avg_price) * 100
                     if price_discount >= 10:  # At least 10% below average
                         good_deals.append({
                             'property': prop,

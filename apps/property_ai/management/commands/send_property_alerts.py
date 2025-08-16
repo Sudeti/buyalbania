@@ -224,10 +224,11 @@ class Command(BaseCommand):
         for location, properties in properties_by_location.items():
             market_stats = analytics.get_location_market_stats(location)
             if market_stats and market_stats.get('avg_price'):
-                avg_price = market_stats['avg_price']
+                avg_price = float(market_stats['avg_price'])  # Convert Decimal to float
                 for prop in properties:
                     if prop.asking_price and avg_price:
-                        price_discount = ((avg_price - prop.asking_price) / avg_price) * 100
+                        prop_price = float(prop.asking_price)  # Convert Decimal to float
+                        price_discount = ((avg_price - prop_price) / avg_price) * 100
                         if price_discount >= min_discount:
                             good_deals.append({
                                 'property': prop,

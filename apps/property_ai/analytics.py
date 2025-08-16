@@ -145,7 +145,8 @@ class PropertyAnalytics:
             # Calculate basic market position
             market_position = None
             if market_stats.get('avg_price') and price > 0:
-                market_position = ((price - market_stats['avg_price']) / market_stats['avg_price']) * 100
+                avg_market_price = float(market_stats['avg_price'])  # Convert Decimal to float
+                market_position = ((price - avg_market_price) / avg_market_price) * 100
             
             # Basic opportunity indicators
             opportunity_indicators = []
@@ -240,7 +241,9 @@ class PropertyAnalytics:
             avg_comp_price_per_sqm = comp_stats['avg_price_per_sqm']
             
             if avg_comp_price and price > 0:
-                price_position = ((price - avg_comp_price) / avg_comp_price) * 100
+                # Convert Decimal to float to avoid type mismatch
+                avg_comp_price_float = float(avg_comp_price)
+                price_position = ((price - avg_comp_price_float) / avg_comp_price_float) * 100
                 price_percentile = self._calculate_price_percentile(price, comparables)
             else:
                 price_position = 0
@@ -249,7 +252,8 @@ class PropertyAnalytics:
             # Calculate area-adjusted price comparison
             if area and avg_comp_price_per_sqm:
                 current_price_per_sqm = price / area
-                price_per_sqm_position = ((current_price_per_sqm - avg_comp_price_per_sqm) / avg_comp_price_per_sqm) * 100
+                avg_comp_price_per_sqm_float = float(avg_comp_price_per_sqm)
+                price_per_sqm_position = ((current_price_per_sqm - avg_comp_price_per_sqm_float) / avg_comp_price_per_sqm_float) * 100
             else:
                 price_per_sqm_position = 0
             
@@ -302,7 +306,7 @@ class PropertyAnalytics:
             
             # Factor 1: Price vs Market Average (40% weight)
             if comparable_analysis.get('avg_comparable_price'):
-                avg_price = comparable_analysis['avg_comparable_price']
+                avg_price = float(comparable_analysis['avg_comparable_price'])  # Convert Decimal to float
                 price = float(property_analysis.asking_price)
                 price_diff = ((price - avg_price) / avg_price) * 100
                 
