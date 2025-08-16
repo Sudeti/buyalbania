@@ -13,11 +13,10 @@ from apps.property_ai import views as property_views
 urlpatterns = [
     # Django Admin
     path('admin/', admin.site.urls),
-    path('accounts/', include('apps.accounts.urls')),  # <-- use the new accounts app
-    path('', include('apps.property_ai.urls')),  # <-- use the new property_ai app
+    path('accounts/', include('apps.accounts.urls')),
+    path('payments/', include('apps.payments.urls')),
+    path('', include('apps.property_ai.urls')),
     path('social-auth/', include('social_django.urls', namespace='social')),
-    
-    
 ]
 
 if settings.DEBUG:

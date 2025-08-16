@@ -80,6 +80,10 @@
                                 <a href="{% url tier.cta_url %}" class="btn {{ tier.cta_class }} btn-lg w-100">
                                     {{ tier.cta_text }}
                                 </a>
+                            {% elif tier.cta_url == 'payments:checkout' %}
+                                <a href="{% url tier.cta_url plan_id=tier.plan_id %}" class="btn {{ tier.cta_class }} btn-lg w-100">
+                                    {{ tier.cta_text }}
+                                </a>
                             {% else %}
                                 <button class="btn {{ tier.cta_class }} btn-lg w-100" onclick="showUpgradeModal('{{ tier.name|lower }}')">
                                     {{ tier.cta_text }}
@@ -94,83 +98,52 @@
     </div>
 </section>
 
-<!-- Features Comparison -->
+<!-- Key Features -->
 <section class="bg-light py-5">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="display-6 fw-bold mb-3">Feature Comparison</h2>
+            <h2 class="display-6 fw-bold mb-3">What You Get</h2>
             <p class="lead text-muted">
-                See what's included in each plan
+                Professional AI-powered property analysis for Albanian real estate
             </p>
         </div>
         
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th class="border-0">Feature</th>
-                        <th class="text-center border-0">Free</th>
-                        <th class="text-center border-0">Basic</th>
-                        <th class="text-center border-0">Premium</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="fw-semibold">Property Analyses</td>
-                        <td class="text-center">1/month</td>
-                        <td class="text-center">10/month</td>
-                        <td class="text-center">Unlimited</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Investment Score</td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Market Analytics</td>
-                        <td class="text-center">Basic</td>
-                        <td class="text-center">Enhanced</td>
-                        <td class="text-center">Advanced</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Negotiation Insights</td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Price Positioning</td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Property Alerts</td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Portfolio Analytics</td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">ROI Projections</td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
-                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Customer Support</td>
-                        <td class="text-center">Email</td>
-                        <td class="text-center">Priority Email</td>
-                        <td class="text-center">Priority Support</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 mb-3">🤖</div>
+                        <h4 class="h5 fw-bold mb-3">AI Investment Analysis</h4>
+                        <p class="text-muted small">
+                            Get AI-powered investment scores, recommendations, and market insights for every property
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 mb-3">📄</div>
+                        <h4 class="h5 fw-bold mb-3">PDF Reports</h4>
+                        <p class="text-muted small">
+                            Receive detailed PDF reports via email with comprehensive analysis and recommendations
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 mb-3">📊</div>
+                        <h4 class="h5 fw-bold mb-3">Market Analytics</h4>
+                        <p class="text-muted small">
+                            Access market trends, comparable properties, and negotiation insights
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -184,44 +157,44 @@
         
         <div class="row g-4">
             <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Can I cancel anytime?</h5>
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold">How does the analysis work?</h5>
                         <p class="card-text text-muted">
-                            Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+                            Simply paste a property URL from Century21 Albania. Our AI analyzes the property data, market conditions, and comparable properties to provide investment scores and recommendations.
                         </p>
                     </div>
                 </div>
             </div>
             
             <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Do analyses expire?</h5>
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold">When do I get my PDF report?</h5>
                         <p class="card-text text-muted">
-                            No, your completed analyses are saved permanently and you can access them anytime, even after canceling.
+                            PDF reports are automatically generated and sent to your email within minutes of completing the analysis. Check your inbox and spam folder.
                         </p>
                     </div>
                 </div>
             </div>
             
             <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">What if I exceed my monthly limit?</h5>
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold">What are property alerts?</h5>
                         <p class="card-text text-muted">
-                            You can upgrade to a higher tier at any time. Your new limit will be available immediately.
+                            Get notified via email when new properties are listed that are priced 10%+ below market average, helping you find the best deals first.
                         </p>
                     </div>
                 </div>
             </div>
             
             <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Is my data secure?</h5>
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold">Can I upgrade anytime?</h5>
                         <p class="card-text text-muted">
-                            Yes, we use industry-standard encryption and never share your personal data with third parties.
+                            Yes, you can upgrade to a higher tier at any time. Your new features and limits will be available immediately.
                         </p>
                     </div>
                 </div>

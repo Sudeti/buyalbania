@@ -32,7 +32,14 @@ def analyze_property(request):
                 'can_analyze': profile.can_analyze_property()
             }
         
-        return render(request, 'property_ai/analyze_form.html', {'quota_info': quota_info})
+        # Get subscription plans for upgrade buttons
+        from apps.payments.models import SubscriptionPlan
+        subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+        
+        return render(request, 'property_ai/analyze_form.html', {
+            'quota_info': quota_info,
+            'subscription_plans': subscription_plans
+        })
     
     # Require login for ANY analysis
     if not request.user.is_authenticated:
@@ -73,8 +80,8 @@ def analyze_property(request):
             if not profile.can_analyze_property():
                 logger.debug(f"User {request.user.username} quota exceeded for retry. Tier: {profile.subscription_tier}, Used: {profile.monthly_analyses_used}")
                 tier_info = {
-                    'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€5) for 10 analyses per month!',
-                    'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€15) for unlimited analyses!',
+                    'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€19) for 10 analyses per month!',
+                    'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€49) for unlimited analyses!',
                 }
                 messages.error(request, tier_info.get(profile.subscription_tier, 'Analysis quota exceeded.'))
                 return redirect('property_ai:analyze_property')
@@ -177,8 +184,8 @@ def analyze_property(request):
     if not profile.can_analyze_property():
         logger.debug(f"User {request.user.username} quota exceeded. Tier: {profile.subscription_tier}, Used: {profile.monthly_analyses_used}")
         tier_info = {
-            'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€5) for 10 analyses per month!',
-            'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€15) for unlimited analyses!',
+            'free': 'You\'ve used your 1 free analysis this month. You can still access existing analyses without using quota. Upgrade to Basic (€19) for 10 analyses per month!',
+            'basic': 'You\'ve used all 10 analyses this month. You can still access existing analyses without using quota. Upgrade to Premium (€49) for unlimited analyses!',
         }
         messages.error(request, tier_info.get(profile.subscription_tier, 'Analysis quota exceeded.'))
         return redirect('property_ai:analyze_property')

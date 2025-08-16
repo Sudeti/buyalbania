@@ -46,7 +46,8 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.property_ai.apps.PropertyAiConfig', 
-    'apps.accounts.apps.AccountsConfig',  # <-- add this line
+    'apps.accounts.apps.AccountsConfig',
+    'apps.payments.apps.PaymentsConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ['markdownx']
@@ -251,4 +252,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store in database
 
-MAINTENANCE_MODE = True 
+MAINTENANCE_MODE = True
+
+# Stripe Configuration
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET') 

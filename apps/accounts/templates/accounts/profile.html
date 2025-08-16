@@ -126,26 +126,31 @@
                             <div class="d-flex flex-column gap-2 small">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-check-circle-fill text-success"></i>
-                                    <span><strong>Basic (€5/month):</strong> 10 analyses/month</span>
+                                    <span><strong>Basic (€19/month):</strong> 10 analyses/month</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-check-circle-fill text-success"></i>
-                                    <span><strong>Premium (€15/month):</strong> Unlimited analyses</span>
+                                    <span><strong>Premium (€49/month):</strong> Unlimited analyses</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-check-circle-fill text-success"></i>
-                                    <span>Priority support & advanced insights</span>
+                                    <span>PDF reports, property alerts & market analytics</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <a href="{% url 'property_ai:services' %}" class="btn btn-warning flex-fill">
-                                Upgrade to Basic
-                            </a>
-                            <a href="{% url 'property_ai:services' %}" class="btn btn-primary flex-fill">
-                                Go Premium
-                            </a>
+                                                    {% for plan in subscription_plans %}
+                            {% if plan.tier == 'basic' %}
+                                <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-warning flex-fill">
+                                    Upgrade to Basic
+                                </a>
+                            {% elif plan.tier == 'premium' %}
+                                <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-primary flex-fill">
+                                    Go Premium
+                                </a>
+                            {% endif %}
+                        {% endfor %}
                         </div>
                     
                     {% elif user.profile.subscription_tier == 'basic' %}
@@ -175,9 +180,13 @@
                             </div>
                         </div>
                         
-                        <a href="{% url 'property_ai:services' %}" class="btn btn-primary w-100">
-                            Upgrade to Premium - €15/month
-                        </a>
+                        {% for plan in subscription_plans %}
+                            {% if plan.tier == 'premium' %}
+                                <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-primary w-100">
+                                    Upgrade to Premium - €{{ plan.price_monthly }}/month
+                                </a>
+                            {% endif %}
+                        {% endfor %}
                     
                     {% else %}
                         <!-- Premium Plan -->
@@ -273,6 +282,11 @@
                         Account Settings
                     </h3>
                     <div class="d-flex flex-column gap-2">
+                        <a href="{% url 'payments:subscription_management' %}" class="btn btn-outline-primary text-start">
+                            <i class="bi bi-credit-card me-2"></i>
+                            Manage Subscription
+                        </a>
+                        
                         <a href="{% url 'accounts:password_reset' %}" class="btn btn-outline-secondary text-start">
                             <i class="bi bi-lock me-2"></i>
                             Change Password

@@ -77,13 +77,18 @@ def register(request):
 def user_profile(request):
     
     from apps.property_ai.models import PropertyAnalysis
+    from apps.payments.models import SubscriptionPlan
     
     # Get user's analyses
     analyses = PropertyAnalysis.objects.filter(user=request.user).order_by('-created_at')
     
+    # Get subscription plans for upgrade buttons
+    subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+    
     return render(request, "accounts/profile.html", {
         "user": request.user,
         "analyses": analyses,
+        "subscription_plans": subscription_plans,
     })
 
 @login_required

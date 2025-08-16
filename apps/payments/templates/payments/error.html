@@ -1,0 +1,107 @@
+{% extends 'property_ai/base.html' %}
+
+{% block title %}Payment Error - PropertyAI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <!-- Error Message -->
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body p-5">
+                    <!-- Error Icon -->
+                    <div class="display-1 text-danger mb-4">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    
+                    <h1 class="display-6 fw-bold mb-3">Payment Error</h1>
+                    <p class="lead text-muted mb-4">
+                        We encountered an issue processing your payment. Please try again.
+                    </p>
+                    
+                    <!-- Error Details -->
+                    {% if error_message %}
+                    <div class="alert alert-danger mb-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-info-circle"></i>
+                            <div>
+                                <strong>Error Details</strong>
+                                <div class="small">{{ error_message }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Current Status -->
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-shield-check text-info fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong>No Charges Made</strong>
+                                <div class="small">
+                                    Your account hasn't been charged. You can try again safely.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common Solutions -->
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-3">Common Solutions</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <i class="bi bi-credit-card text-primary mb-2"></i>
+                                    <div class="small fw-semibold">Check Card Details</div>
+                                    <div class="small text-muted">Verify your card number and expiry date</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <i class="bi bi-wifi text-primary mb-2"></i>
+                                    <div class="small fw-semibold">Check Connection</div>
+                                    <div class="small text-muted">Ensure you have a stable internet connection</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'payments:checkout' plan_id=plan_id %}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-arrow-clockwise me-2"></i>
+                            Try Again
+                        </a>
+                        <a href="{% url 'property_ai:services' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Back to Plans
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Help Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Still Having Issues?</h5>
+                    <p class="text-muted mb-3">
+                        Our support team is here to help you complete your purchase.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="mailto:support@propertyai.com" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope me-2"></i>
+                            Contact Support
+                        </a>
+                        <a href="tel:+1234567890" class="btn btn-outline-secondary">
+                            <i class="bi bi-telephone me-2"></i>
+                            Call Us
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

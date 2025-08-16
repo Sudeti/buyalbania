@@ -25,6 +25,10 @@ def home(request):
         investment_score__gte=75
     ).order_by('-investment_score')[:3]
     
+    # Get subscription plans for pricing display
+    from apps.payments.models import SubscriptionPlan
+    subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+    
     context = {
         'features': [
             'AI-powered investment analysis for sale properties',
@@ -39,6 +43,7 @@ def home(request):
             'avg_score': round(avg_score or 0, 1),
         },
         'featured_properties': featured_properties,
+        'subscription_plans': subscription_plans,
     }
     return render(request, 'property_ai/home.html', context)
 
@@ -47,7 +52,11 @@ def services(request):
     # Get some stats for social proof
     total_analyses = PropertyAnalysis.objects.filter(status='completed').count()
     
-    # Define the pricing tiers and features
+        # Get subscription plans from database
+    from apps.payments.models import SubscriptionPlan
+    subscription_plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price_monthly')
+    
+    # Define the pricing tiers and features - SIMPLIFIED with higher prices
     tiers = [
         {
             'name': 'Free',
@@ -59,62 +68,49 @@ def services(request):
             'popular': False,
             'features': [
                 '1 property analysis per month',
-                'Basic investment score',
-                'Market positioning insights',
+                'AI investment score',
+                'PDF report via email',
                 'Access to existing analyses',
-                'Email support',
+                'No market insights',
             ],
             'cta_text': 'Start Free',
             'cta_url': 'property_ai:analyze_property',
             'cta_class': 'btn-warning'
-        },
-        {
-            'name': 'Basic',
-            'price': '€5',
-            'period': 'month',
-            'analyses': '10 analyses',
-            'period_text': 'per month',
-            'color': 'primary',
-            'popular': True,
-            'features': [
-                '10 property analyses per month',
-                'Enhanced investment scoring',
-                'Detailed market analytics',
-                'Negotiation leverage insights',
-                'Price positioning analysis',
-                'Access to all existing analyses',
-                'Priority email support',
-                'Property deal alerts',
-            ],
-            'cta_text': 'Upgrade to Basic',
-            'cta_url': '#upgrade-basic',
-            'cta_class': 'btn-primary'
-        },
-        {
-            'name': 'Premium',
-            'price': '€15',
-            'period': 'month',
-            'analyses': 'Unlimited',
-            'period_text': 'analyses',
-            'color': 'success',
-            'popular': False,
-            'features': [
-                'Unlimited property analyses',
-                'Advanced AI insights',
-                'Comprehensive market reports',
-                'Portfolio analytics dashboard',
-                'Custom investment criteria',
-                'Priority customer support',
-                'Advanced property alerts',
-                'Market trend analysis',
-                'ROI projections',
-                'Risk assessment reports',
-            ],
-            'cta_text': 'Go Premium',
-            'cta_url': '#upgrade-premium',
-            'cta_class': 'btn-success'
         }
     ]
+    
+    # Add paid plans from database
+    for plan in subscription_plans:
+        if plan.tier == 'basic':
+            tiers.append({
+                'name': plan.name,
+                'price': f'€{plan.price_monthly}',
+                'period': 'month',
+                'analyses': f'{plan.analyses_per_month} analyses' if plan.analyses_per_month > 0 else 'Unlimited',
+                'period_text': 'per month',
+                'color': 'primary',
+                'popular': True,
+                'features': plan.features,
+                'cta_text': 'Upgrade to Basic',
+                'cta_url': 'payments:checkout',
+                'cta_class': 'btn-primary',
+                'plan_id': plan.id
+            })
+        elif plan.tier == 'premium':
+            tiers.append({
+                'name': plan.name,
+                'price': f'€{plan.price_monthly}',
+                'period': 'month',
+                'analyses': 'Unlimited',
+                'period_text': 'analyses',
+                'color': 'success',
+                'popular': False,
+                'features': plan.features,
+                'cta_text': 'Go Premium',
+                'cta_url': 'payments:checkout',
+                'cta_class': 'btn-success',
+                'plan_id': plan.id
+            })
     
     context = {
         'tiers': tiers,

@@ -183,8 +183,12 @@
                         <div class="badge bg-primary mb-3">Most Popular</div>
                         <h3 class="h5 mb-3">Basic</h3>
                         <div class="mb-3">
-                            <span class="display-6 fw-bold text-primary">€5</span>
-                            <span class="text-muted">/month</span>
+                            {% for plan in subscription_plans %}
+                                {% if plan.tier == 'basic' %}
+                                    <span class="display-6 fw-bold text-primary">€{{ plan.price_monthly }}</span>
+                                    <span class="text-muted">/month</span>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                         <div class="text-muted mb-4">10 analyses per month</div>
                         <a href="{% url 'property_ai:services' %}" class="btn btn-primary w-100">
@@ -199,8 +203,12 @@
                     <div class="card-body p-4">
                         <h3 class="h5 mb-3">Premium</h3>
                         <div class="mb-3">
-                            <span class="display-6 fw-bold text-success">€15</span>
-                            <span class="text-muted">/month</span>
+                            {% for plan in subscription_plans %}
+                                {% if plan.tier == 'premium' %}
+                                    <span class="display-6 fw-bold text-success">€{{ plan.price_monthly }}</span>
+                                    <span class="text-muted">/month</span>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                         <div class="text-muted mb-4">Unlimited analyses</div>
                         <a href="{% url 'property_ai:services' %}" class="btn btn-success w-100">

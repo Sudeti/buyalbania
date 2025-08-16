@@ -32,11 +32,19 @@
                 </div>
                 {% if quota_info.tier != 'premium' %}
                 <div>
-                    {% if quota_info.tier == 'free' %}
-                        <a href="#upgrade" class="btn btn-success btn-sm">Upgrade - €5/month</a>
-                    {% elif quota_info.tier == 'basic' %}
-                        <a href="#upgrade" class="btn btn-warning btn-sm">Go Premium - €15/month</a>
-                    {% endif %}
+                                    {% if quota_info.tier == 'free' %}
+                    {% for plan in subscription_plans %}
+                        {% if plan.tier == 'basic' %}
+                            <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-success btn-sm">Upgrade - €{{ plan.price_monthly }}/month</a>
+                        {% endif %}
+                    {% endfor %}
+                {% elif quota_info.tier == 'basic' %}
+                    {% for plan in subscription_plans %}
+                        {% if plan.tier == 'premium' %}
+                            <a href="{% url 'payments:checkout' plan_id=plan.id %}" class="btn btn-warning btn-sm">Go Premium - €{{ plan.price_monthly }}/month</a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
                 </div>
                 {% endif %}
             </div>

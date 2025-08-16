@@ -1,0 +1,196 @@
+{% extends 'property_ai/base.html' %}
+
+{% block title %}Payment History - PropertyAI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h1 class="display-5 fw-bold mb-2">Payment History</h1>
+                    <p class="lead text-muted">View all your past payments and invoices</p>
+                </div>
+                <a href="{% url 'payments:subscription_management' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Back to Subscription
+                </a>
+            </div>
+
+            {% if payments %}
+            <!-- Payment List -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 ps-4">Date</th>
+                                    <th class="border-0">Description</th>
+                                    <th class="border-0">Amount</th>
+                                    <th class="border-0">Status</th>
+                                    <th class="border-0 text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-semibold">{{ payment.created_at|date:"M j, Y" }}</div>
+                                        <div class="small text-muted">{{ payment.created_at|date:"g:i A" }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ payment.description|default:"Subscription Payment" }}</div>
+                                        {% if payment.subscription %}
+                                            <div class="small text-muted">{{ payment.subscription.plan.name }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-primary">€{{ payment.amount }}</div>
+                                        <div class="small text-muted">{{ payment.currency|upper }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if payment.status == 'succeeded' %}success{% elif payment.status == 'pending' %}warning{% elif payment.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                            {{ payment.status|title }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary" 
+                                                    onclick="showPaymentDetails('{{ payment.id }}')"
+                                                    title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            {% if payment.status == 'succeeded' %}
+                                            <button class="btn btn-outline-primary" 
+                                                    onclick="downloadReceipt('{{ payment.id }}')"
+                                                    title="Download Receipt">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="row g-4 mt-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="h2 fw-bold text-primary mb-2">{{ payments.count }}</div>
+                            <div class="text-muted">Total Payments</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="h2 fw-bold text-success mb-2">
+                                €{{ payments|dictsort:"amount"|last.amount|default:"0" }}
+                            </div>
+                            <div class="text-muted">Highest Payment</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="h2 fw-bold text-info mb-2">
+                                {{ payments|dictsort:"created_at"|last.created_at|date:"M Y"|default:"N/A" }}
+                            </div>
+                            <div class="text-muted">Latest Payment</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- No Payments -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center p-5">
+                    <div class="display-4 mb-3">📄</div>
+                    <h3 class="h4 fw-bold mb-3">No Payment History</h3>
+                    <p class="text-muted mb-4">
+                        You haven't made any payments yet. Start a subscription to see your payment history here.
+                    </p>
+                    <a href="{% url 'property_ai:services' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-credit-card me-2"></i>
+                        View Plans
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Help Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <h3 class="h4 fw-bold mb-3">Need Help with Payments?</h3>
+                    <p class="text-muted mb-3">
+                        Questions about your payments or need a refund? Contact our support team.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="mailto:support@propertyai.com" class="btn btn-outline-secondary">
+                            <i class="bi bi-envelope me-2"></i>
+                            Contact Support
+                        </a>
+                        <a href="{% url 'payments:subscription_management' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear me-2"></i>
+                            Manage Subscription
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPaymentDetails(paymentId) {
+    // This would typically make an AJAX call to get payment details
+    // For now, we'll show a simple message
+    document.getElementById('paymentDetailsContent').innerHTML = `
+        <p>Payment details for payment ID: ${paymentId}</p>
+        <p>This would show detailed payment information including:</p>
+        <ul>
+            <li>Payment method used</li>
+            <li>Transaction ID</li>
+            <li>Billing details</li>
+            <li>Invoice information</li>
+        </ul>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('paymentDetailsModal'));
+    modal.show();
+}
+
+function downloadReceipt(paymentId) {
+    // This would typically generate and download a receipt
+    alert('Receipt download functionality would be implemented here for payment ID: ' + paymentId);
+}
+</script>
+{% endblock %}

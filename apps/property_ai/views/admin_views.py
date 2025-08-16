@@ -137,13 +137,13 @@ def property_rankings(request):
     if ranking_type == 'price_per_sqm':
         # Rank by price per square meter (ascending - best deals first)
         properties = properties.annotate(
-            price_per_sqm=ExpressionWrapper(
+            calculated_price_per_sqm=ExpressionWrapper(
                 F('asking_price') / Coalesce(F('internal_area'), F('total_area'), 1),
                 output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         ).filter(
-            price_per_sqm__gt=0
-        ).order_by('price_per_sqm')
+            calculated_price_per_sqm__gt=0
+        ).order_by('calculated_price_per_sqm')
         
         ranking_title = "Best Price per Square Meter Deals"
         ranking_subtitle = "Properties with lowest €/m² (best value)"
@@ -178,13 +178,13 @@ def property_rankings(request):
     else:
         # Default to price per sqm
         properties = properties.annotate(
-            price_per_sqm=ExpressionWrapper(
+            calculated_price_per_sqm=ExpressionWrapper(
                 F('asking_price') / Coalesce(F('internal_area'), F('total_area'), 1),
                 output_field=DecimalField(max_digits=10, decimal_places=2)
             )
         ).filter(
-            price_per_sqm__gt=0
-        ).order_by('price_per_sqm')
+            calculated_price_per_sqm__gt=0
+        ).order_by('calculated_price_per_sqm')
         
         ranking_title = "Best Price per Square Meter Deals"
         ranking_subtitle = "Properties with lowest €/m² (best value)"
@@ -211,7 +211,7 @@ def property_rankings(request):
         
         # Add ranking-specific data
         if ranking_type == 'price_per_sqm':
-            prop_data['price_per_sqm'] = prop.price_per_sqm
+            prop_data['price_per_sqm'] = getattr(prop, 'calculated_price_per_sqm', prop.price_per_sqm)
         elif ranking_type == 'market_position':
             prop_data['market_position'] = prop.market_position_percentage
         elif ranking_type == 'opportunity_score':
