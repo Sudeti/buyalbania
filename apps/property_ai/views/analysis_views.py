@@ -302,6 +302,14 @@ def analyze_property(request):
                 analysis.status = 'completed'
                 analysis.save()
                 
+                # 🆕 ADD THIS: Trigger PDF generation and email
+                from ..tasks import generate_property_report_task
+                try:
+                    generate_property_report_task.delay(analysis.id)
+                    logger.info(f"Queued PDF report generation for analysis {analysis.id}")
+                except Exception as e:
+                    logger.error(f"Failed to queue PDF generation for analysis {analysis.id}: {e}")
+                
                 logger.debug(f"Analysis completed successfully for {request.user.username}")
                 messages.success(request, f'Analysis complete! You have {profile.remaining_analyses} analyses remaining this month.')
                 return redirect('property_ai:analysis_detail', analysis_id=analysis.id)
