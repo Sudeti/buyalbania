@@ -148,6 +148,77 @@
    </div>
 </section>
 
+<!-- Pricing Preview Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-6 fw-bold mb-3">
+                Simple, Transparent Pricing
+            </h2>
+            <p class="lead text-muted">
+                Start free, upgrade when you need more
+            </p>
+        </div>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 text-center">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Free</h3>
+                        <div class="mb-3">
+                            <span class="display-6 fw-bold text-warning">€0</span>
+                            <span class="text-muted">/month</span>
+                        </div>
+                        <div class="text-muted mb-4">1 analysis per month</div>
+                        <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-warning w-100">
+                            Start Free
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 text-center border-primary border-2">
+                    <div class="card-body p-4">
+                        <div class="badge bg-primary mb-3">Most Popular</div>
+                        <h3 class="h5 mb-3">Basic</h3>
+                        <div class="mb-3">
+                            <span class="display-6 fw-bold text-primary">€5</span>
+                            <span class="text-muted">/month</span>
+                        </div>
+                        <div class="text-muted mb-4">10 analyses per month</div>
+                        <a href="{% url 'property_ai:services' %}" class="btn btn-primary w-100">
+                            View Plans
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 text-center">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Premium</h3>
+                        <div class="mb-3">
+                            <span class="display-6 fw-bold text-success">€15</span>
+                            <span class="text-muted">/month</span>
+                        </div>
+                        <div class="text-muted mb-4">Unlimited analyses</div>
+                        <a href="{% url 'property_ai:services' %}" class="btn btn-success w-100">
+                            View Plans
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'property_ai:services' %}" class="btn btn-outline-primary">
+                See All Features & Plans
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- CTA Section -->
 <section class="bg-dark text-white py-5">
    <div class="container">

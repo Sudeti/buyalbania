@@ -241,6 +241,11 @@
                             <i class="bi bi-search"></i> Analyze
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'property_ai:services' %}">
+                            <i class="bi bi-star"></i> Pricing
+                        </a>
+                    </li>
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'property_ai:my_analyses' %}">

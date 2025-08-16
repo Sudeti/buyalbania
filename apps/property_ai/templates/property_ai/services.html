@@ -1,0 +1,280 @@
+{% extends "property_ai/base.html" %}
+
+{% block title %}Pricing & Plans - PropertyAI{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mx-auto" style="max-width: 800px;">
+            <h1 class="display-4 fw-bold mb-4">
+                Choose Your <span class="text-primary">Analysis Plan</span>
+            </h1>
+            <p class="lead text-muted mb-5">
+                Professional property analysis for every investor. Start free, upgrade when you're ready.
+            </p>
+            
+            <!-- Trust Indicators -->
+            <div class="d-flex justify-content-center gap-4 flex-wrap text-muted small mb-5">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>{{ stats.total_analyses|default:"1,200+" }} Properties Analyzed</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>No Credit Card Required</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span>Cancel Anytime</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Cards -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4 justify-content-center">
+            {% for tier in tiers %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 position-relative fade-in" style="animation-delay: {% if forloop.counter == 1 %}0s{% elif forloop.counter == 2 %}0.1s{% else %}0.2s{% endif %};">
+                    {% if tier.popular %}
+                    <div class="position-absolute top-0 start-50 translate-middle-x">
+                        <span class="badge bg-primary px-3 py-2 rounded-bottom">
+                            <i class="bi bi-star-fill me-1"></i>
+                            Most Popular
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body p-4">
+                        <!-- Header -->
+                        <div class="text-center mb-4">
+                            <h3 class="h4 fw-bold mb-2">{{ tier.name }}</h3>
+                            <div class="mb-3">
+                                <span class="display-6 fw-bold text-{{ tier.color }}">{{ tier.price }}</span>
+                                <span class="text-muted">/{{ tier.period }}</span>
+                            </div>
+                            <div class="h5 text-muted mb-4">
+                                {{ tier.analyses }} {{ tier.period_text }}
+                            </div>
+                        </div>
+                        
+                        <!-- Features -->
+                        <div class="mb-4">
+                            <ul class="list-unstyled">
+                                {% for feature in tier.features %}
+                                <li class="d-flex align-items-start gap-3 mb-3">
+                                    <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+                                    <span class="small">{{ feature }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <!-- CTA Button -->
+                        <div class="text-center">
+                            {% if tier.cta_url == 'property_ai:analyze_property' %}
+                                <a href="{% url tier.cta_url %}" class="btn {{ tier.cta_class }} btn-lg w-100">
+                                    {{ tier.cta_text }}
+                                </a>
+                            {% else %}
+                                <button class="btn {{ tier.cta_class }} btn-lg w-100" onclick="showUpgradeModal('{{ tier.name|lower }}')">
+                                    {{ tier.cta_text }}
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Comparison -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-6 fw-bold mb-3">Feature Comparison</h2>
+            <p class="lead text-muted">
+                See what's included in each plan
+            </p>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="border-0">Feature</th>
+                        <th class="text-center border-0">Free</th>
+                        <th class="text-center border-0">Basic</th>
+                        <th class="text-center border-0">Premium</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="fw-semibold">Property Analyses</td>
+                        <td class="text-center">1/month</td>
+                        <td class="text-center">10/month</td>
+                        <td class="text-center">Unlimited</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Investment Score</td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Market Analytics</td>
+                        <td class="text-center">Basic</td>
+                        <td class="text-center">Enhanced</td>
+                        <td class="text-center">Advanced</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Negotiation Insights</td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Price Positioning</td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Property Alerts</td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Portfolio Analytics</td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">ROI Projections</td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-x text-muted"></i></td>
+                        <td class="text-center"><i class="bi bi-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Customer Support</td>
+                        <td class="text-center">Email</td>
+                        <td class="text-center">Priority Email</td>
+                        <td class="text-center">Priority Support</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-6 fw-bold mb-3">Frequently Asked Questions</h2>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Can I cancel anytime?</h5>
+                        <p class="card-text text-muted">
+                            Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Do analyses expire?</h5>
+                        <p class="card-text text-muted">
+                            No, your completed analyses are saved permanently and you can access them anytime, even after canceling.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">What if I exceed my monthly limit?</h5>
+                        <p class="card-text text-muted">
+                            You can upgrade to a higher tier at any time. Your new limit will be available immediately.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Is my data secure?</h5>
+                        <p class="card-text text-muted">
+                            Yes, we use industry-standard encryption and never share your personal data with third parties.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="bg-dark text-white py-5">
+    <div class="container">
+        <div class="text-center mx-auto" style="max-width: 600px;">
+            <h2 class="display-6 fw-bold mb-4 text-white">
+                Ready to Start Analyzing?
+            </h2>
+            <p class="lead text-white-50 mb-5">
+                Join hundreds of investors making smarter property decisions with AI-powered analysis
+            </p>
+            <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary btn-lg">
+                Start Free Analysis
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Upgrade Modal -->
+<div class="modal fade" id="upgradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upgrade Your Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Upgrade functionality coming soon! For now, you can:</p>
+                <ul>
+                    <li>Continue using your current plan</li>
+                    <li>Contact us for manual upgrades</li>
+                    <li>Use your remaining analyses</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{% url 'property_ai:analyze_property' %}" class="btn btn-primary">Analyze Property</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showUpgradeModal(plan) {
+    const modal = new bootstrap.Modal(document.getElementById('upgradeModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

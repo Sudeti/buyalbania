@@ -143,9 +143,10 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 NOWPAYMENTS_API_KEY = os.getenv('NOWPAYMENTS_API_KEY')
 IPN_SECRET = os.getenv('IPN_SECRET')
 
-USE_GEMINI = True  # Set to True to use Gemini, False for Ollama
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')  # Add to environment variables
-GEMINI_MODEL = 'gemini-2.5-flash'  # or 'gemini-1.5-pro' for higher accuracy
+# OpenAI Configuration
+USE_OPENAI = True  # Set to True to use OpenAI GPT-5
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')  # Add to environment variables
+OPENAI_MODEL = 'gpt-5'  # or 'gpt-4-turbo' for fallback
 
 
 # Encryption key for sensitive data

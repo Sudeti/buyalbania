@@ -7,6 +7,7 @@ app_name = 'property_ai'
 urlpatterns = [
     # Main pages
     path('', home_views.home, name='home'),
+    path('services/', home_views.services, name='services'),
     path('analyze/', analysis_views.analyze_property, name='analyze_property'),
     path('analysis/<uuid:analysis_id>/', analysis_views.analysis_detail, name='analysis_detail'),
     

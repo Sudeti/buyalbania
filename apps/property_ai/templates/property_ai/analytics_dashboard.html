@@ -73,6 +73,27 @@
     .score-good { color: #17a2b8; }
     .score-fair { color: #ffc107; }
     .score-poor { color: #dc3545; }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-analyzing { background: #fff3cd; color: #856404; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    
+    .analysis-note {
+        background: #e7f3ff;
+        border-left: 4px solid #17a2b8;
+        padding: 1rem;
+        border-radius: 0 8px 8px 0;
+        margin: 1rem 0;
+    }
 </style>
 {% endblock %}
 
@@ -107,7 +128,14 @@
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="stat-number">{{ portfolio_stats.total_analyses|default:0 }}</div>
-                <div class="stat-label">Total Analyses</div>
+                <div class="stat-label">Total Properties</div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ portfolio_stats.completed_analyses|default:0 }}</div>
+                <div class="stat-label">Completed Analyses</div>
             </div>
         </div>
         
@@ -120,18 +148,54 @@
         
         <div class="col-md-3">
             <div class="stat-card">
-                <div class="stat-number">{{ portfolio_stats.avg_opportunity_score|default:0|floatformat:1 }}</div>
-                <div class="stat-label">Avg Opportunity Score</div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
                 <div class="stat-number">{{ portfolio_stats.strong_buys|default:0 }}</div>
                 <div class="stat-label">Strong Buy Recommendations</div>
             </div>
         </div>
     </div>
+
+    <!-- Analysis Status Breakdown -->
+    {% if status_breakdown %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="h4 mb-3">📋 Analysis Status</h3>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="chart-container text-center">
+                <div class="stat-number status-completed">{{ status_breakdown.completed }}</div>
+                <div class="stat-label">Completed</div>
+                <span class="status-badge status-completed">✓ Ready</span>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="chart-container text-center">
+                <div class="stat-number status-analyzing">{{ status_breakdown.analyzing }}</div>
+                <div class="stat-label">Analyzing</div>
+                <span class="status-badge status-analyzing">⏳ Processing</span>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="chart-container text-center">
+                <div class="stat-number status-failed">{{ status_breakdown.failed }}</div>
+                <div class="stat-label">Failed</div>
+                <span class="status-badge status-failed">❌ Error</span>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="chart-container text-center">
+                <div class="stat-number">{{ status_breakdown.completion_rate|floatformat:1 }}%</div>
+                <div class="stat-label">Completion Rate</div>
+                <div class="progress mt-2" style="height: 8px;">
+                    <div class="progress-bar bg-success" style="width: {{ status_breakdown.completion_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Market Summary -->
     {% if market_summary.market_stats %}
@@ -159,10 +223,18 @@
                         <div class="stat-label">Avg Investment Score</div>
                     </div>
                     <div class="col-6">
-                        <div class="stat-number">{{ market_summary.market_stats.high_score_rate|default:0|floatformat:1 }}%</div>
-                        <div class="stat-label">High Score Rate</div>
+                        <div class="stat-number">{{ market_summary.market_stats.analysis_completion_rate|default:0|floatformat:1 }}%</div>
+                        <div class="stat-label">Analysis Completion</div>
                     </div>
                 </div>
+                
+                {% if market_summary.market_stats.analysis_completion_rate < 100 %}
+                <div class="analysis-note mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> {{ market_summary.market_stats.analyzing_count|default:0 }} properties are currently being analyzed. 
+                    Basic metrics are available for unanalyzed properties.
+                </div>
+                {% endif %}
             </div>
         </div>
         
@@ -173,7 +245,12 @@
                     {% for type_data in market_summary.type_distribution|slice:":5" %}
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="text-capitalize">{{ type_data.property_type|default:"Unknown" }}</span>
-                        <span class="badge bg-primary">{{ type_data.count }}</span>
+                        <div>
+                            <span class="badge bg-primary">{{ type_data.count }}</span>
+                            {% if type_data.completed_count %}
+                            <small class="text-muted ms-1">({{ type_data.completed_count }} analyzed)</small>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -209,6 +286,11 @@
                         <div class="stat-label">Avg Price</div>
                     </div>
                 </div>
+                {% if location_data.completed_count %}
+                <div class="text-center mt-2">
+                    <small class="text-muted">{{ location_data.completed_count }} of {{ location_data.count }} analyzed</small>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -240,6 +322,11 @@
                         <div class="stat-label">Avg Price</div>
                     </div>
                 </div>
+                {% if type_data.completed_count %}
+                <div class="text-center mt-2">
+                    <small class="text-muted">{{ type_data.completed_count }} of {{ type_data.count }} analyzed</small>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -256,7 +343,10 @@
         {% for trend_data in recent_trends %}
         <div class="col-md-6">
             <div class="chart-container">
-                <h6 class="mb-2">{{ trend_data.property|truncatechars:40 }}</h6>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0">{{ trend_data.property|truncatechars:40 }}</h6>
+                    <span class="status-badge status-{{ trend_data.status }}">{{ trend_data.status|title }}</span>
+                </div>
                 <small class="text-muted">{{ trend_data.location }}</small>
                 
                 {% if trend_data.trends %}
@@ -295,6 +385,13 @@
                         <div class="stat-label">Below Market</div>
                     </div>
                 </div>
+                {% if portfolio_stats.basic_opportunity_count %}
+                <div class="text-center mt-3">
+                    <div class="stat-number trend-up">{{ portfolio_stats.basic_opportunity_count }}</div>
+                    <div class="stat-label">Basic Opportunities</div>
+                    <small class="text-muted">(Unanalyzed properties with potential)</small>
+                </div>
+                {% endif %}
             </div>
         </div>
         
@@ -311,11 +408,24 @@
                         <i class="bi bi-exclamation-triangle"></i>
                         <strong>Moderate Market:</strong> Mixed conditions, selective investing recommended
                     </div>
-                {% else %}
+                {% elif portfolio_stats.avg_investment_score %}
                     <div class="alert alert-danger">
                         <i class="bi bi-x-circle"></i>
                         <strong>Challenging Market:</strong> Low scores suggest waiting for better opportunities
                     </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Analysis in Progress:</strong> Complete analysis of properties to get detailed insights
+                    </div>
+                {% endif %}
+                
+                {% if portfolio_stats.analyzing_count > 0 %}
+                <div class="alert alert-warning mt-2">
+                    <i class="bi bi-clock"></i>
+                    <strong>{{ portfolio_stats.analyzing_count }} properties</strong> are currently being analyzed. 
+                    Check back soon for updated insights.
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -388,3 +498,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

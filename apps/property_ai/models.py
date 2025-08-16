@@ -153,7 +153,7 @@ class PropertyAnalysis(TimeStampedModel):
     
     @property
     def price_per_sqm(self):
-        area = self.usable_area
+        area = self.total_area
         if area and area > 0:
             return float(self.asking_price) / area
         return None

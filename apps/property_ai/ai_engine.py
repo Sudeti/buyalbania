@@ -4,23 +4,16 @@ import re
 import time
 import threading
 from django.conf import settings
-import google.generativeai as genai
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
 class PropertyAI:
     """AI-powered property investment analysis"""
 
-    def __init__(self, model_name='gemini-2.5-pro'):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(
-            model_name,
-            generation_config={
-                "response_mime_type": "application/json",
-                "temperature": 0.7,
-                "max_output_tokens": 8000,
-            }
-        )
+    def __init__(self, model_name='gpt-5'):
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.model_name = model_name
    
     # Updated ai_engine.py - simplified to match your scraper
     # ai_engine.py - Update the analyze_property method
@@ -42,23 +35,32 @@ class PropertyAI:
             if property_analysis:
                 location = property_analysis.property_location.split(',')[0]
                 
-                # Get market statistics
-                market_stats = analytics.get_location_market_stats(location, property_analysis.property_type)
+                # Get market statistics (include unanalyzed properties for better context)
+                market_stats = analytics.get_location_market_stats(location, property_analysis.property_type, include_unanalyzed=True)
                 
-                # Get comparable analysis
-                comparable_analysis = analytics.get_comparable_analysis(property_analysis)
+                # Get comparable analysis (include unanalyzed properties)
+                comparable_analysis = analytics.get_comparable_analysis(property_analysis, include_unanalyzed=True)
                 
-                # Get market opportunity score
+                # Get market opportunity score (works for both analyzed and unanalyzed properties)
                 opportunity_analysis = analytics.get_market_opportunity_score(property_analysis)
                 
-                # Get negotiation insights
-                negotiation_insights = analytics.get_negotiation_insights(property_analysis)
+                # Get basic metrics for unanalyzed properties
+                basic_metrics = {}
+                if property_analysis.status != 'completed':
+                    basic_metrics = analytics.get_basic_property_metrics(property_analysis)
+                
+                # Get negotiation insights (only for completed analyses)
+                negotiation_insights = {}
+                if property_analysis.status == 'completed':
+                    negotiation_insights = analytics.get_negotiation_insights(property_analysis)
                 
                 market_analytics = {
                     'market_stats': market_stats,
                     'comparable_analysis': comparable_analysis,
                     'opportunity_analysis': opportunity_analysis,
-                    'negotiation_insights': negotiation_insights
+                    'basic_metrics': basic_metrics,
+                    'negotiation_insights': negotiation_insights,
+                    'analysis_status': property_analysis.status
                 }
             
             # Build enhanced prompt with analytics data
@@ -142,12 +144,11 @@ class PropertyAI:
             
             response = self._generate_with_thread_timeout(prompt)
             
-            if response and hasattr(response, 'text'):
+            if response and hasattr(response, 'choices') and len(response.choices) > 0:
                 try:
-                    if hasattr(response, 'parts') and len(response.parts) > 0:
-                        content = response.parts[0].text
-                        data = self._safe_json_loads(content)
-                        return {"status": "success", **data}
+                    content = response.choices[0].message.content
+                    data = self._safe_json_loads(content)
+                    return {"status": "success", **data}
                 except Exception as e:
                     logger.error(f"Error parsing response: {e}")
                     
@@ -164,7 +165,16 @@ class PropertyAI:
         
         def target():
             try:
-                result[0] = self.model.generate_content(prompt)
+                result[0] = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": "You are an expert Albanian real estate investment analyst. Always respond with valid JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=8000,
+                    response_format={"type": "json_object"}
+                )
             except Exception as e:
                 exception[0] = e
         

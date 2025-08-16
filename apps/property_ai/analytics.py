@@ -17,19 +17,22 @@ class PropertyAnalytics:
         self.six_months_ago = self.now - timedelta(days=180)
         self.one_year_ago = self.now - timedelta(days=365)
     
-    def get_location_market_stats(self, location: str, property_type: str = None) -> Dict:
+    def get_location_market_stats(self, location: str, property_type: str = None, include_unanalyzed: bool = True) -> Dict:
         """Get comprehensive market statistics for a location"""
         try:
-            # Base query for location
+            # Base query for location - include all properties, not just completed analyses
             base_query = PropertyAnalysis.objects.filter(
                 property_location__icontains=location,
-                status='completed',
                 asking_price__gt=0,
                 created_at__gte=self.six_months_ago
             )
             
             if property_type:
                 base_query = base_query.filter(property_type=property_type)
+            
+            # If not including unanalyzed, filter for completed analyses only
+            if not include_unanalyzed:
+                base_query = base_query.filter(status='completed')
             
             # Calculate key metrics
             stats = base_query.aggregate(
@@ -41,6 +44,9 @@ class PropertyAnalytics:
                 avg_investment_score=Avg('investment_score'),
                 high_score_count=Count('id', filter=Q(investment_score__gte=80)),
                 strong_buy_count=Count('id', filter=Q(recommendation='strong_buy')),
+                completed_analyses=Count('id', filter=Q(status='completed')),
+                analyzing_count=Count('id', filter=Q(status='analyzing')),
+                failed_count=Count('id', filter=Q(status='failed')),
             )
             
             # Calculate price ranges
@@ -49,15 +55,15 @@ class PropertyAnalytics:
                 stats['price_range'] = price_range
                 stats['price_volatility'] = (price_range / stats['avg_price']) * 100 if stats['avg_price'] else 0
                 
-                            # Calculate success rates
-            if stats['total_properties'] > 0:
-                stats['high_score_rate'] = (stats['high_score_count'] / stats['total_properties']) * 100
-                stats['strong_buy_rate'] = (stats['strong_buy_count'] / stats['total_properties']) * 100
-            else:
-                stats['high_score_rate'] = 0
-                stats['strong_buy_rate'] = 0
+                # Calculate success rates (only for completed analyses)
+                if stats['completed_analyses'] > 0:
+                    stats['high_score_rate'] = (stats['high_score_count'] / stats['completed_analyses']) * 100
+                    stats['strong_buy_rate'] = (stats['strong_buy_count'] / stats['completed_analyses']) * 100
+                else:
+                    stats['high_score_rate'] = 0
+                    stats['strong_buy_rate'] = 0
                 
-                # Market sentiment
+                # Market sentiment (only for completed analyses)
                 if stats['avg_investment_score']:
                     if stats['avg_investment_score'] >= 75:
                         stats['market_sentiment'] = 'bullish'
@@ -67,6 +73,16 @@ class PropertyAnalytics:
                         stats['market_sentiment'] = 'bearish'
                 else:
                     stats['market_sentiment'] = 'unknown'
+                
+                # Analysis completion rate
+                stats['analysis_completion_rate'] = (stats['completed_analyses'] / stats['total_properties']) * 100
+            else:
+                stats['price_range'] = 0
+                stats['price_volatility'] = 0
+                stats['high_score_rate'] = 0
+                stats['strong_buy_rate'] = 0
+                stats['market_sentiment'] = 'unknown'
+                stats['analysis_completion_rate'] = 0
             
             return stats
             
@@ -74,20 +90,23 @@ class PropertyAnalytics:
             logger.error(f"Error calculating location market stats for {location}: {e}")
             return {}
     
-    def get_price_trends(self, location: str, property_type: str = None, months: int = 6) -> List[Dict]:
+    def get_price_trends(self, location: str, property_type: str = None, months: int = 6, include_unanalyzed: bool = True) -> List[Dict]:
         """Get price trends over time for a location"""
         try:
             start_date = self.now - timedelta(days=months * 30)
             
             base_query = PropertyAnalysis.objects.filter(
                 property_location__icontains=location,
-                status='completed',
                 asking_price__gt=0,
                 created_at__gte=start_date
             )
             
             if property_type:
                 base_query = base_query.filter(property_type=property_type)
+            
+            # If not including unanalyzed, filter for completed analyses only
+            if not include_unanalyzed:
+                base_query = base_query.filter(status='completed')
             
             # Group by month and calculate averages
             trends = base_query.annotate(
@@ -96,7 +115,9 @@ class PropertyAnalytics:
                 avg_price=Avg('asking_price'),
                 avg_price_per_sqm=Avg(F('asking_price') / F('total_area')),
                 property_count=Count('id'),
-                avg_investment_score=Avg('investment_score')
+                avg_investment_score=Avg('investment_score'),
+                completed_count=Count('id', filter=Q(status='completed')),
+                analyzing_count=Count('id', filter=Q(status='analyzing'))
             ).order_by('month')
             
             return list(trends)
@@ -105,21 +126,87 @@ class PropertyAnalytics:
             logger.error(f"Error calculating price trends for {location}: {e}")
             return []
     
-    def get_comparable_analysis(self, property_analysis: PropertyAnalysis) -> Dict:
+    def get_basic_property_metrics(self, property_analysis: PropertyAnalysis) -> Dict:
+        """Get basic metrics for properties without analysis data"""
+        try:
+            price = float(property_analysis.asking_price)
+            area = property_analysis.total_area
+            
+            # Basic price metrics
+            price_per_sqm = (price / area) if area and area > 0 else None
+            
+            # Location-based metrics
+            location_tier = property_analysis.location_tier
+            
+            # Get market context for this location and property type
+            location = property_analysis.property_location.split(',')[0]
+            market_stats = self.get_location_market_stats(location, property_analysis.property_type, include_unanalyzed=True)
+            
+            # Calculate basic market position
+            market_position = None
+            if market_stats.get('avg_price') and price > 0:
+                market_position = ((price - market_stats['avg_price']) / market_stats['avg_price']) * 100
+            
+            # Basic opportunity indicators
+            opportunity_indicators = []
+            
+            if market_position and market_position < -10:
+                opportunity_indicators.append({
+                    'factor': 'below_market_price',
+                    'description': f'Price is {abs(market_position):.1f}% below market average',
+                    'impact': 'positive'
+                })
+            
+            if location_tier == 'prime':
+                opportunity_indicators.append({
+                    'factor': 'prime_location',
+                    'description': 'Prime location with high demand potential',
+                    'impact': 'positive'
+                })
+            
+            if property_analysis.days_on_market > 60:
+                opportunity_indicators.append({
+                    'factor': 'long_market_time',
+                    'description': f'Property on market for {property_analysis.days_on_market} days',
+                    'impact': 'positive'
+                })
+            
+            return {
+                'price_per_sqm': price_per_sqm,
+                'location_tier': location_tier,
+                'market_position_percentage': market_position,
+                'days_on_market': property_analysis.days_on_market,
+                'opportunity_indicators': opportunity_indicators,
+                'market_context': {
+                    'avg_market_price': market_stats.get('avg_price'),
+                    'avg_market_price_per_sqm': market_stats.get('avg_price_per_sqm'),
+                    'total_properties_in_area': market_stats.get('total_properties'),
+                    'analysis_completion_rate': market_stats.get('analysis_completion_rate', 0)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating basic property metrics: {e}")
+            return {}
+    
+    def get_comparable_analysis(self, property_analysis: PropertyAnalysis, include_unanalyzed: bool = True) -> Dict:
         """Get detailed comparable property analysis"""
         try:
             location = property_analysis.property_location.split(',')[0]
             property_type = property_analysis.property_type
             price = float(property_analysis.asking_price)
-            area = property_analysis.usable_area
+            area = property_analysis.total_area
             
             # Get comparable properties
             comparables = PropertyAnalysis.objects.filter(
                 property_location__icontains=location,
                 property_type=property_type,
-                status='completed',
                 asking_price__gt=0
             ).exclude(id=property_analysis.id)
+            
+            # If not including unanalyzed, filter for completed analyses only
+            if not include_unanalyzed:
+                comparables = comparables.filter(status='completed')
             
             # Filter by size if available
             if area:
@@ -144,7 +231,8 @@ class PropertyAnalytics:
                 min_price=Min('asking_price'),
                 max_price=Max('asking_price'),
                 avg_investment_score=Avg('investment_score'),
-                total_count=Count('id')
+                total_count=Count('id'),
+                completed_count=Count('id', filter=Q(status='completed'))
             )
             
             # Calculate price position
@@ -167,6 +255,7 @@ class PropertyAnalytics:
             
             return {
                 'comparable_count': comp_stats['total_count'],
+                'completed_comparables': comp_stats['completed_count'],
                 'avg_comparable_price': avg_comp_price,
                 'avg_comparable_price_per_sqm': avg_comp_price_per_sqm,
                 'price_position_percentage': price_position,
@@ -180,7 +269,7 @@ class PropertyAnalytics:
                 'avg_comparable_score': comp_stats['avg_investment_score'],
                 'comparable_properties': list(comparables.values(
                     'property_title', 'asking_price', 'total_area', 
-                    'investment_score', 'recommendation', 'created_at'
+                    'investment_score', 'recommendation', 'status', 'created_at'
                 )[:5])
             }
             
@@ -191,9 +280,126 @@ class PropertyAnalytics:
     def get_market_opportunity_score(self, property_analysis: PropertyAnalysis) -> Dict:
         """Calculate market opportunity score based on multiple factors"""
         try:
+            # If property has investment score, use existing logic
+            if property_analysis.investment_score is not None:
+                return self._calculate_full_opportunity_score(property_analysis)
+            else:
+                # Use basic metrics for unanalyzed properties
+                return self._calculate_basic_opportunity_score(property_analysis)
+                
+        except Exception as e:
+            logger.error(f"Error calculating market opportunity score: {e}")
+            return {'opportunity_score': 50, 'factors': []}
+    
+    def _calculate_basic_opportunity_score(self, property_analysis: PropertyAnalysis) -> Dict:
+        """Calculate basic opportunity score for properties without analysis"""
+        try:
+            basic_metrics = self.get_basic_property_metrics(property_analysis)
+            comparable_analysis = self.get_comparable_analysis(property_analysis, include_unanalyzed=True)
+            
+            factors = []
+            opportunity_score = 50  # Base score
+            
+            # Factor 1: Price vs Market Average (40% weight)
+            if comparable_analysis.get('avg_comparable_price'):
+                avg_price = comparable_analysis['avg_comparable_price']
+                price = float(property_analysis.asking_price)
+                price_diff = ((price - avg_price) / avg_price) * 100
+                
+                if price_diff <= -10:  # 10% or more below average
+                    factors.append({
+                        'factor': 'price_below_market',
+                        'description': f'Price is {abs(price_diff):.1f}% below market average',
+                        'impact': 'positive',
+                        'weight': 40
+                    })
+                    opportunity_score += 25
+                elif price_diff >= 10:  # 10% or more above average
+                    factors.append({
+                        'factor': 'price_above_market',
+                        'description': f'Price is {price_diff:.1f}% above market average',
+                        'impact': 'negative',
+                        'weight': 40
+                    })
+                    opportunity_score -= 20
+            
+            # Factor 2: Location Tier (30% weight)
+            location_tier = property_analysis.location_tier
+            if location_tier == 'prime':
+                factors.append({
+                    'factor': 'prime_location',
+                    'description': 'Prime location with high demand',
+                    'impact': 'positive',
+                    'weight': 30
+                })
+                opportunity_score += 20
+            elif location_tier == 'emerging':
+                factors.append({
+                    'factor': 'emerging_location',
+                    'description': 'Emerging location with growth potential',
+                    'impact': 'positive',
+                    'weight': 30
+                })
+                opportunity_score += 15
+            
+            # Factor 3: Days on Market (20% weight)
+            days_on_market = property_analysis.days_on_market
+            if days_on_market > 90:
+                factors.append({
+                    'factor': 'long_market_time',
+                    'description': f'Property on market for {days_on_market} days',
+                    'impact': 'positive',
+                    'weight': 20
+                })
+                opportunity_score += 15  # Negotiation opportunity
+            elif days_on_market < 30:
+                factors.append({
+                    'factor': 'recent_listing',
+                    'description': f'Property recently listed ({days_on_market} days)',
+                    'impact': 'neutral',
+                    'weight': 20
+                })
+            
+            # Factor 4: Property Type Demand (10% weight)
+            type_demand = self._get_property_type_demand(property_analysis.property_type, 
+                                                       property_analysis.property_location.split(',')[0])
+            if type_demand == 'high':
+                factors.append({
+                    'factor': 'high_type_demand',
+                    'description': 'High demand for this property type',
+                    'impact': 'positive',
+                    'weight': 10
+                })
+                opportunity_score += 10
+            elif type_demand == 'low':
+                factors.append({
+                    'factor': 'low_type_demand',
+                    'description': 'Low demand for this property type',
+                    'impact': 'negative',
+                    'weight': 10
+                })
+                opportunity_score -= 10
+            
+            # Normalize score to 0-100 range
+            opportunity_score = max(0, min(100, opportunity_score))
+            
+            return {
+                'opportunity_score': round(opportunity_score, 1),
+                'factors': factors,
+                'analysis_status': 'basic',
+                'note': 'Score based on basic metrics - full analysis recommended'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating basic opportunity score: {e}")
+            return {'opportunity_score': 50, 'factors': [], 'analysis_status': 'basic'}
+    
+    def _calculate_full_opportunity_score(self, property_analysis: PropertyAnalysis) -> Dict:
+        """Calculate full opportunity score for properties with analysis data"""
+        try:
             location = property_analysis.property_location.split(',')[0]
             price = float(property_analysis.asking_price)
-            area = property_analysis.usable_area
+            area = property_analysis.total_area
             
             # Get market stats
             market_stats = self.get_location_market_stats(location, property_analysis.property_type)
@@ -301,13 +507,12 @@ class PropertyAnalytics:
             return {
                 'opportunity_score': round(opportunity_score, 1),
                 'factors': factors,
-                'market_stats': market_stats,
-                'comparable_analysis': comparable_analysis
+                'analysis_status': 'full'
             }
             
         except Exception as e:
-            logger.error(f"Error calculating market opportunity score: {e}")
-            return {'opportunity_score': 50, 'factors': []}
+            logger.error(f"Error calculating full opportunity score: {e}")
+            return {'opportunity_score': 50, 'factors': [], 'analysis_status': 'full'}
     
     def get_negotiation_insights(self, property_analysis: PropertyAnalysis) -> Dict:
         """Provide negotiation insights based on market analysis"""
@@ -441,17 +646,21 @@ class PropertyAnalytics:
             logger.error(f"Error determining property type demand: {e}")
             return 'unknown'
     
-    def get_market_summary(self, location: str = None) -> Dict:
+    def get_market_summary(self, location: str = None, include_unanalyzed: bool = True) -> Dict:
         """Get comprehensive market summary"""
         try:
+            # Base query - include all properties, not just completed analyses
             base_query = PropertyAnalysis.objects.filter(
-                status='completed',
                 asking_price__gt=0,
                 created_at__gte=self.six_months_ago
             )
             
             if location:
                 base_query = base_query.filter(property_location__icontains=location)
+            
+            # If not including unanalyzed, filter for completed analyses only
+            if not include_unanalyzed:
+                base_query = base_query.filter(status='completed')
             
             # Overall market stats
             total_count = base_query.count()
@@ -461,19 +670,33 @@ class PropertyAnalytics:
                     avg_price=Avg('asking_price'),
                     avg_investment_score=Avg('investment_score'),
                     high_score_count=Count('id', filter=Q(investment_score__gte=80)),
-                    strong_buy_count=Count('id', filter=Q(recommendation='strong_buy'))
+                    strong_buy_count=Count('id', filter=Q(recommendation='strong_buy')),
+                    completed_analyses=Count('id', filter=Q(status='completed')),
+                    analyzing_count=Count('id', filter=Q(status='analyzing')),
+                    failed_count=Count('id', filter=Q(status='failed'))
                 )
                 
-                # Calculate rates
-                market_stats['high_score_rate'] = (market_stats['high_score_count'] / total_count) * 100
-                market_stats['strong_buy_rate'] = (market_stats['strong_buy_count'] / total_count) * 100
+                # Calculate rates (only for completed analyses)
+                if market_stats['completed_analyses'] > 0:
+                    market_stats['high_score_rate'] = (market_stats['high_score_count'] / market_stats['completed_analyses']) * 100
+                    market_stats['strong_buy_rate'] = (market_stats['strong_buy_count'] / market_stats['completed_analyses']) * 100
+                else:
+                    market_stats['high_score_rate'] = 0
+                    market_stats['strong_buy_rate'] = 0
+                
+                # Analysis completion rate
+                market_stats['analysis_completion_rate'] = (market_stats['completed_analyses'] / total_count) * 100
             else:
                 market_stats = {
                     'total_properties': 0,
                     'avg_price': 0,
                     'avg_investment_score': 0,
                     'high_score_rate': 0,
-                    'strong_buy_rate': 0
+                    'strong_buy_rate': 0,
+                    'completed_analyses': 0,
+                    'analyzing_count': 0,
+                    'failed_count': 0,
+                    'analysis_completion_rate': 0
                 }
             
             # Price trends by month
@@ -481,14 +704,17 @@ class PropertyAnalytics:
                 month=TruncMonth('created_at')
             ).values('month').annotate(
                 avg_price=Avg('asking_price'),
-                property_count=Count('id')
+                property_count=Count('id'),
+                completed_count=Count('id', filter=Q(status='completed')),
+                analyzing_count=Count('id', filter=Q(status='analyzing'))
             ).order_by('month')
             
             # Property type distribution
             type_distribution = base_query.values('property_type').annotate(
                 count=Count('id'),
                 avg_price=Avg('asking_price'),
-                avg_score=Avg('investment_score')
+                avg_score=Avg('investment_score'),
+                completed_count=Count('id', filter=Q(status='completed'))
             ).order_by('-count')
             
             return {
